@@ -24,21 +24,19 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-4">
-      {/* Logo */}
       <motion.div
         initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         className="text-center"
       >
         <h1 className="text-7xl font-bold tracking-wider text-teamA drop-shadow-[0_0_24px_rgba(245,166,35,0.7)]">
-          🐐 КОЗЁЛ
+          🐐 GOAT
         </h1>
-        <p className="text-bg-3 text-xl mt-2 tracking-widest uppercase">Доміно онлайн</p>
+        <p className="text-bg-3 text-xl mt-2 tracking-widest uppercase">Domino online</p>
       </motion.div>
 
-      {/* Name input */}
       <input
         className="bg-bg-2 border-2 border-bg-3 rounded-2xl px-5 py-3 text-xl text-center w-72 outline-none focus:border-teamA transition-colors"
-        placeholder="Твоє ім'я"
+        placeholder="Your name"
         maxLength={16}
         value={name}
         onChange={e => saveName(e.target.value)}
@@ -46,15 +44,15 @@ export default function HomePage() {
 
       {mode === 'home' && (
         <motion.div className="flex flex-col gap-4 w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Btn onClick={() => setMode('create')} color="teamA">Створити кімнату</Btn>
-          <Btn onClick={() => setMode('join')} color="teamB">Приєднатись по ID</Btn>
+          <Btn onClick={() => setMode('create')} color="teamA">Create room</Btn>
+          <Btn onClick={() => setMode('join')} color="teamB">Join by ID</Btn>
         </motion.div>
       )}
 
       {mode === 'create' && (
         <motion.div className="flex flex-col gap-4 w-80" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <label className="flex justify-between items-center text-lg">
-            Гравців
+            Players
             <select
               className="bg-bg-2 border border-bg-3 rounded-xl px-3 py-1"
               value={settings.playerCount}
@@ -71,20 +69,20 @@ export default function HomePage() {
           </label>
 
           <label className="flex justify-between items-center text-lg">
-            Режим
+            Mode
             <select
               disabled={settings.playerCount === 3}
               className="bg-bg-2 border border-bg-3 rounded-xl px-3 py-1 disabled:opacity-40"
               value={settings.mode}
               onChange={e => setSettings(s => ({ ...s, mode: e.target.value as 'teams' | 'ffa' }))}
             >
-              <option value="teams">Команда на команду</option>
-              <option value="ffa">Кожен за себе</option>
+              <option value="teams">Teams</option>
+              <option value="ffa">Free for all</option>
             </select>
           </label>
 
           <label className="flex justify-between items-center text-lg">
-            До очок
+            Target score
             <div className="flex gap-2 items-center">
               {[61, 81, 121].map(n => (
                 <button key={n}
@@ -102,15 +100,15 @@ export default function HomePage() {
           </label>
 
           <label className="flex justify-between items-center text-lg">
-            Базар
+            Boneyard
             <input type="checkbox" className="w-5 h-5 accent-teamA"
               checked={settings.bazaarEnabled}
               onChange={e => setSettings(s => ({ ...s, bazaarEnabled: e.target.checked }))}
             />
           </label>
 
-          <Btn onClick={create} color="teamA">Створити 🎲</Btn>
-          <Btn onClick={() => setMode('home')} color="none">← Назад</Btn>
+          <Btn onClick={create} color="teamA">Create 🎲</Btn>
+          <Btn onClick={() => setMode('home')} color="none">← Back</Btn>
         </motion.div>
       )}
 
@@ -118,13 +116,13 @@ export default function HomePage() {
         <motion.div className="flex flex-col gap-4 w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <input
             className="bg-bg-2 border-2 border-bg-3 rounded-2xl px-5 py-3 text-2xl text-center tracking-widest uppercase w-full outline-none focus:border-teamB transition-colors"
-            placeholder="ID КІМНАТИ"
+            placeholder="ROOM ID"
             maxLength={5}
             value={joinId}
             onChange={e => setJoinId(e.target.value.toUpperCase())}
           />
-          <Btn onClick={join} color="teamB">Увійти 🚪</Btn>
-          <Btn onClick={() => setMode('home')} color="none">← Назад</Btn>
+          <Btn onClick={join} color="teamB">Join 🚪</Btn>
+          <Btn onClick={() => setMode('home')} color="none">← Back</Btn>
         </motion.div>
       )}
     </div>

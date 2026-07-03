@@ -2,15 +2,15 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../store/useGameStore';
 
 export default function MatchOverlay() {
-  const { gameState, send } = useGameStore();
+  const { gameState, leaveRoom } = useGameStore();
   if (!gameState || gameState.phase !== 'matchEnd') return null;
 
   const { scores, settings, players, goats = [] } = gameState;
   const isGoat = (key: string) => goats.includes(key);
 
   function label(key: string) {
-    if (key === 'A') return 'Команда A';
-    if (key === 'B') return 'Команда B';
+    if (key === 'A') return 'Team A';
+    if (key === 'B') return 'Team B';
     return players.find(p => p.id === key)?.name ?? key;
   }
 
@@ -23,11 +23,11 @@ export default function MatchOverlay() {
       <motion.h1 initial={{ scale: 0.3, rotate: -10 }} animate={{ scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 150 }}
         className="text-7xl font-bold text-teamA drop-shadow-[0_0_32px_rgba(245,166,35,0.9)] text-center">
-        🏆 Матч!
+        🏆 Match over!
       </motion.h1>
 
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-        className="text-3xl">{label(winner)} перемагає!</motion.p>
+        className="text-3xl">{label(winner)} wins!</motion.p>
 
       <div className="flex flex-col gap-3 w-full max-w-sm">
         {sorted.map(([key, score], i) => (
@@ -47,21 +47,21 @@ export default function MatchOverlay() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.8, type: 'spring' }}
           className="text-center">
           <p className="text-5xl">🐐🐐🐐</p>
-          <p className="text-danger text-2xl font-bold mt-2">КОЗЁЛ!</p>
-          <p className="text-bg-3">{goats.map(label).join(', ')} — жодного очка за матч</p>
+          <p className="text-danger text-2xl font-bold mt-2">GOAT!</p>
+          <p className="text-bg-3">{goats.map(label).join(', ')} — zero points this match</p>
         </motion.div>
       )}
 
       <div className="flex gap-4">
         <motion.button whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.05 }}
-          onClick={() => send({ type: 'create_room', hostName: '', settings: gameState.settings } as never)}
+          onClick={leaveRoom}
           className="bg-teamA text-bg rounded-2xl px-6 py-3 text-xl font-bold">
-          Реванш 🔄
+          Main menu
         </motion.button>
         <motion.button whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.05 }}
           onClick={() => window.location.reload()}
           className="bg-bg-2 border border-bg-3 rounded-2xl px-6 py-3 text-xl">
-          В меню
+          Reload
         </motion.button>
       </div>
     </motion.div>

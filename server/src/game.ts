@@ -67,14 +67,14 @@ export function placeTile(
 ): { ok: boolean; error?: string; scoreDelta?: number } {
   const seat = state.currentTurn;
   const player = state.players.find(p => p.seat === seat);
-  if (!player) return { ok: false, error: 'Гравець не знайдений' };
+  if (!player) return { ok: false, error: 'Player not found' };
 
   const tileIdx = player.hand.findIndex(t => t.id === tileId);
-  if (tileIdx === -1) return { ok: false, error: 'Кістка не в руці' };
+  if (tileIdx === -1) return { ok: false, error: 'Tile not in hand' };
 
   const tile = player.hand[tileIdx];
 
-  if (!canPlay(tile, state.chain)) return { ok: false, error: 'Кістка не підходить' };
+  if (!canPlay(tile, state.chain)) return { ok: false, error: "Tile doesn't fit" };
 
   // Determine orientation and place
   let orientation: 'normal' | 'flipped' = 'normal';
@@ -84,13 +84,13 @@ export function placeTile(
     const rv = chainRightValue(state.chain);
     if (tile.left === rv) orientation = 'normal';
     else if (tile.right === rv) orientation = 'flipped';
-    else return { ok: false, error: 'Кістка не підходить до правого кінця' };
+    else return { ok: false, error: "Tile doesn't fit the right end" };
     state.chain.push({ tile, orientation });
   } else {
     const lv = chainLeftValue(state.chain);
     if (tile.right === lv) orientation = 'normal';
     else if (tile.left === lv) orientation = 'flipped';
-    else return { ok: false, error: 'Кістка не підходить до лівого кінця' };
+    else return { ok: false, error: "Tile doesn't fit the left end" };
     state.chain.unshift({ tile, orientation });
   }
 
@@ -133,7 +133,7 @@ export function checkRoundEnd(state: GameState): { ended: boolean; winnerKey?: s
       .filter(p => scoreKey(state, p) !== key)
       .reduce((sum, p) => sum + p.hand.reduce((s, t) => s + t.left + t.right, 0), 0);
     if (opponentPips > 0) addScore(state, fishPlayer, opponentPips);
-    return { ended: true, winnerKey: key, reason: 'риба' };
+    return { ended: true, winnerKey: key, reason: 'fish' };
   }
 
   // Blocked: no one can play and bazaar is empty
@@ -148,7 +148,7 @@ export function checkRoundEnd(state: GameState): { ended: boolean; winnerKey?: s
     const winner = totals[0].player;
     const loserPips = totals.slice(1).reduce((s, t) => s + t.pips, 0);
     addScore(state, winner, loserPips);
-    return { ended: true, winnerKey: scoreKey(state, winner), reason: 'закрита гра' };
+    return { ended: true, winnerKey: scoreKey(state, winner), reason: 'blocked' };
   }
 
   return { ended: false };

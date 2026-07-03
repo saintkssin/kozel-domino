@@ -41,7 +41,7 @@ export function deleteRoom(roomId: string): void {
 }
 
 export function sanitizeName(name: string, existing: string[]): string {
-  const base = name.trim().slice(0, 16) || 'Гравець';
+  const base = name.trim().slice(0, 16) || 'Player';
   if (!existing.includes(base)) return base;
   let i = 2;
   while (existing.includes(`${base} (${i})`)) i++;

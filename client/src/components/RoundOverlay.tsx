@@ -11,19 +11,26 @@ export default function RoundOverlay() {
 
   function label(key?: string) {
     if (!key) return '?';
-    if (key === 'A') return 'Команда A 🟡';
-    if (key === 'B') return 'Команда B 💜';
+    if (key === 'A') return 'Team A 🟡';
+    if (key === 'B') return 'Team B 💜';
     return players.find(p => p.id === key)?.name ?? key;
   }
+
+  const reasonLabel: Record<string, string> = {
+    'риба': 'fish',
+    'закрита гра': 'blocked',
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center gap-6 z-50">
       <motion.h2 initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
         className="text-5xl font-bold text-teamA drop-shadow-[0_0_20px_rgba(245,166,35,0.8)]">
-        🎉 Раунд!
+        🎉 Round over!
       </motion.h2>
-      <p className="text-2xl">{label(roundWinner)} — <span className="text-teamA">{roundWinReason}</span></p>
+      <p className="text-2xl">
+        {label(roundWinner)} — <span className="text-teamA">{roundWinReason ? (reasonLabel[roundWinReason] ?? roundWinReason) : ''}</span>
+      </p>
 
       <div className="flex gap-8 text-2xl">
         {settings.mode === 'teams' ? (
@@ -40,12 +47,12 @@ export default function RoundOverlay() {
 
       {isHost && (
         <motion.button whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.05 }}
-          onClick={() => send({ type: 'start_next_round' } as never)}
+          onClick={() => send({ type: 'start_next_round' })}
           className="bg-teamA text-bg rounded-2xl px-8 py-3 text-xl font-bold mt-2">
-          Наступний раунд →
+          Next round →
         </motion.button>
       )}
-      {!isHost && <p className="text-bg-3">Чекаємо на хоста...</p>}
+      {!isHost && <p className="text-bg-3">Waiting for host...</p>}
     </motion.div>
   );
 }

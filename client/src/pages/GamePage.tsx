@@ -81,7 +81,7 @@ export default function GamePage() {
         {/* Bazaar — face-down tiles on the right, clickable when no valid play */}
         {settings.bazaarEnabled && bazaar.length > 0 && (
           <div className="absolute right-2 top-2 bottom-2 flex flex-col items-center gap-1 overflow-y-auto max-h-full">
-            <span className="text-xs text-tile-bg opacity-60 mb-1">Базар ({bazaar.length})</span>
+            <span className="text-xs text-tile-bg opacity-60 mb-1">Boneyard ({bazaar.length})</span>
             {bazaar.map(t => (
               <motion.button
                 key={t.id}
@@ -110,7 +110,7 @@ export default function GamePage() {
             <motion.button whileTap={{ scale: 0.93 }}
               onClick={() => playTile('left')}
               className="bg-teamB text-white rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
-              ← Ліво
+              ← Left
             </motion.button>
             <motion.button whileTap={{ scale: 0.93 }}
               onClick={() => setSelectedTileId(null)}
@@ -120,7 +120,7 @@ export default function GamePage() {
             <motion.button whileTap={{ scale: 0.93 }}
               onClick={() => playTile('right')}
               className="bg-teamA text-ui-bg rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
-              Право →
+              Right →
             </motion.button>
           </motion.div>
         )}
@@ -129,7 +129,7 @@ export default function GamePage() {
       {/* ── My hand ───────────────────────────────── */}
       <div className="flex flex-col items-center gap-2 pb-4 px-2 z-10">
         <p className={`text-sm font-semibold px-3 py-0.5 rounded-full ${isMyTurn ? 'bg-teamA text-ui-bg' : 'bg-ui-card text-tile-bg'}`}>
-          {isMyTurn ? '🟢 Ваш хід' : `Хід: ${currentPlayer?.name ?? '?'}`}
+          {isMyTurn ? '🟢 Your turn' : `Turn: ${currentPlayer?.name ?? '?'}`}
         </p>
 
         <div className="flex gap-2 flex-wrap justify-center px-2">
@@ -158,7 +158,7 @@ export default function GamePage() {
         {isMyTurn && !hasPlay && bazaar.length === 0 && (
           <motion.button whileTap={{ scale: 0.93 }} onClick={passTurn}
             className="bg-danger text-white rounded-xl px-5 py-2 text-lg font-semibold mt-1 shadow-tile">
-            Пропустити хід
+            Pass
           </motion.button>
         )}
       </div>
@@ -175,7 +175,7 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
   if (!chain.length) {
     return (
       <div className="flex items-center justify-center h-20">
-        <span className="text-felt-light text-base opacity-60">Перший хід — викладіть кістку</span>
+        <span className="text-felt-light text-base opacity-60">First move — place a tile</span>
       </div>
     );
   }
@@ -243,7 +243,7 @@ function ScoreBar({ scores, settings, players }: {
       {settings.mode === 'teams' ? (
         <>
           <ScoreBadge label="🟡 A" score={scores['A'] ?? 0} target={settings.targetScore} color="teamA" />
-          <span className="text-ui-border text-sm">до {settings.targetScore}</span>
+          <span className="text-ui-border text-sm">to {settings.targetScore}</span>
           <ScoreBadge label="💜 B" score={scores['B'] ?? 0} target={settings.targetScore} color="teamB" />
         </>
       ) : (

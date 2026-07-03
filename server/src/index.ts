@@ -80,9 +80,9 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
 
       case 'join_room': {
         const state = getRoom(msg.roomId.toUpperCase());
-        if (!state) return err(socket, 'Кімнату не знайдено');
-        if (state.phase !== 'lobby') return err(socket, 'Гра вже почалась');
-        if (state.players.length >= state.settings.playerCount) return err(socket, 'Кімната заповнена');
+        if (!state) return err(socket, 'Room not found');
+        if (state.phase !== 'lobby') return err(socket, 'Game already started');
+        if (state.players.length >= state.settings.playerCount) return err(socket, 'Room is full');
 
         const names = state.players.map(p => p.name);
         const name = sanitizeName(msg.name, names);
@@ -122,7 +122,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state) return;
         const host = state.players.find(p => p.id === socket.playerId && p.isHost);
-        if (!host || state.phase !== 'lobby') return err(socket, 'Недостатньо прав');
+        if (!host || state.phase !== 'lobby') return err(socket, 'Not enough permissions');
         Object.assign(state.settings, msg.settings);
         // re-init scores if mode changed
         state.scores = initScores(state.settings);
@@ -141,7 +141,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state || state.settings.mode !== 'teams') return;
         const host = state.players.find(p => p.id === socket.playerId && p.isHost);
-        if (!host) return err(socket, 'Тільки хост може змінювати команди');
+        if (!host) return err(socket, 'Only the host can change teams');
         const target = state.players.find(p => p.id === msg.playerId);
         if (target) { target.team = msg.team; updateRoom(state); broadcast(state); }
         break;
@@ -151,7 +151,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state) return;
         const host = state.players.find(p => p.id === socket.playerId && p.isHost);
-        if (!host) return err(socket, 'Тільки хост може змінювати місця');
+        if (!host) return err(socket, 'Only the host can change seats');
         const target = state.players.find(p => p.id === msg.playerId);
         const displaced = state.players.find(p => p.seat === msg.seat);
         if (target && displaced) {
@@ -173,11 +173,11 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state) return;
         const host = state.players.find(p => p.id === socket.playerId && p.isHost);
-        if (!host) return err(socket, 'Тільки хост може почати гру');
+        if (!host) return err(socket, 'Only the host can start the game');
         if (state.players.length < state.settings.playerCount)
-          return err(socket, 'Не всі гравці підключились');
+          return err(socket, 'Not all players connected');
         if (!state.players.every(p => p.ready))
-          return err(socket, 'Не всі гравці готові');
+          return err(socket, 'Not all players are ready');
         dealTiles(state);
         resolveFirstTurn(state);
         state.phase = 'playing';
@@ -190,7 +190,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state || state.phase !== 'playing') return;
         const p = state.players.find(pl => pl.id === socket.playerId);
-        if (!p || p.seat !== state.currentTurn) return err(socket, 'Не ваш хід');
+        if (!p || p.seat !== state.currentTurn) return err(socket, 'Not your turn');
 
         const result = placeTile(state, msg.tileId, msg.end);
         if (!result.ok) return err(socket, result.error!);
@@ -233,11 +233,11 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state || state.phase !== 'playing') return;
         const p = state.players.find(pl => pl.id === socket.playerId);
-        if (!p || p.seat !== state.currentTurn) return err(socket, 'Не ваш хід');
-        if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'У вас є хід — базар недоступний');
+        if (!p || p.seat !== state.currentTurn) return err(socket, 'Not your turn');
+        if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'You have a valid play — boneyard unavailable');
 
         const idx = state.bazaar.findIndex(t => t.id === msg.tileId);
-        if (idx === -1) return err(socket, 'Кістка не в базарі');
+        if (idx === -1) return err(socket, 'Tile not in boneyard');
         const [drawn] = state.bazaar.splice(idx, 1);
         p.hand.push(drawn);
         // Turn stays on this player — they keep drawing until playable or bazaar empty, then pass
@@ -250,9 +250,9 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const state = socket.roomId ? getRoom(socket.roomId) : undefined;
         if (!state || state.phase !== 'playing') return;
         const p = state.players.find(pl => pl.id === socket.playerId);
-        if (!p || p.seat !== state.currentTurn) return err(socket, 'Не ваш хід');
-        if (state.bazaar.length > 0) return err(socket, 'Базар не порожній — можна взяти кістку');
-        if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'У вас є хід');
+        if (!p || p.seat !== state.currentTurn) return err(socket, 'Not your turn');
+        if (state.bazaar.length > 0) return err(socket, 'Boneyard is not empty — draw a tile');
+        if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'You have a valid play');
         nextTurn(state);
         const round = checkRoundEnd(state);
         if (round.ended) {
