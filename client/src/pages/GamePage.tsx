@@ -1,12 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/useGameStore';
-import { ChainTile, DominoTile } from '@kozel/shared';
+import { ChainTile, Player } from '@kozel/shared';
 import { DominoTileCard, DominoBack } from '../components/DominoTile';
 import RoundOverlay from '../components/RoundOverlay';
 import MatchOverlay from '../components/MatchOverlay';
 
-const TILE_HALF = 40; // px — half-tile square size
+const TILE_HALF = 40;
+
+function assignPositions(mySeat: number, players: Player[]): Record<string, 'top' | 'left' | 'right'> {
+  const n = players.length;
+  const map: Record<string, 'top' | 'left' | 'right'> = {};
+  for (const p of players) {
+    if (p.seat === mySeat) continue;
+    const off = (p.seat - mySeat + n) % n;
+    map[p.id] = n === 2 ? 'top'
+      : n === 3 ? (off === 1 ? 'right' : 'left')
+      : off === 1 ? 'right' : off === 2 ? 'top' : 'left';
+  }
+  return map;
+}
 
 export default function GamePage() {
   const { gameState, myPlayerId, send, error } = useGameStore();
@@ -29,13 +42,12 @@ export default function GamePage() {
     return t.left === l || t.right === l || t.left === r || t.right === r;
   });
 
-  // Shake tile on server error
   useEffect(() => {
     if (!error) return;
     const target = lastPlayedRef.current;
     if (target) {
       setShakeId(target);
-      setSelectedTileId(target); // re-select so user can retry
+      setSelectedTileId(target);
       lastPlayedRef.current = null;
       const t = setTimeout(() => setShakeId(null), 450);
       return () => clearTimeout(t);
@@ -49,89 +61,100 @@ export default function GamePage() {
     setSelectedTileId(null);
   }
 
-  function drawFromBazaar(tileId: string) {
-    send({ type: 'draw_from_bazaar', tileId });
-  }
+  const positions = me ? assignPositions(me.seat, players) : {};
+  const topPlayer = players.find(p => positions[p.id] === 'top');
+  const leftPlayer = players.find(p => positions[p.id] === 'left');
+  const rightPlayer = players.find(p => positions[p.id] === 'right');
 
-  function passTurn() {
-    send({ type: 'pass_turn' });
-  }
-
-  const opponents = players.filter(p => p.id !== myPlayerId);
+  const isHost = me?.isHost ?? false;
+  const hasDisconnected = players.some(p => !p.connected);
 
   return (
-    <div className="felt-table relative flex flex-col min-h-screen overflow-hidden">
+    <div className="felt-table relative flex flex-col h-screen overflow-hidden">
 
-      {/* ── Score bar ─────────────────────────────── */}
-      <ScoreBar scores={scores} settings={settings} players={players} />
+      <ScoreBar scores={scores} settings={settings} players={players}
+        isHost={isHost}
+        onRestart={() => send({ type: 'restart_game' })} />
 
-      {/* ── Opponents row ─────────────────────────── */}
-      <div className="flex justify-center gap-6 px-4 pt-3 pb-1 z-10">
-        {opponents.map(p => (
-          <PlayerAvatar key={p.id} player={p}
-            isActive={p.seat === currentTurn}
-            handCount={p.handCount ?? p.hand.length}
-          />
-        ))}
-      </div>
+      {/* Top opponent */}
+      {topPlayer && (
+        <div className="flex justify-center pt-1 z-10 flex-shrink-0">
+          <OpponentSlot player={topPlayer} isActive={topPlayer.seat === currentTurn} pos="top" />
+        </div>
+      )}
 
-      {/* ── Main table area ───────────────────────── */}
-      <div className="flex-1 flex items-center justify-center relative z-10 py-2">
+      {/* Middle: left | chain | right + bazaar */}
+      <div className="flex-1 flex min-h-0 z-10">
 
-        {/* Bazaar — face-down tiles on the right, clickable when no valid play */}
-        {settings.bazaarEnabled && bazaar.length > 0 && (
-          <div className="absolute right-2 top-2 bottom-2 flex flex-col items-center gap-1 overflow-y-auto max-h-full">
-            <span className="text-xs text-tile-bg opacity-60 mb-1">Boneyard ({bazaar.length})</span>
-            {bazaar.map(t => (
-              <motion.button
-                key={t.id}
-                whileHover={isMyTurn && !hasPlay ? { scale: 1.07, y: -3 } : {}}
-                whileTap={isMyTurn && !hasPlay ? { scale: 0.93 } : {}}
-                onClick={isMyTurn && !hasPlay ? () => drawFromBazaar(t.id) : undefined}
-                className={isMyTurn && !hasPlay ? 'cursor-pointer' : 'cursor-default'}
-              >
-                <DominoBack size={TILE_HALF - 4} />
-              </motion.button>
-            ))}
-          </div>
-        )}
+        <div className="w-20 flex-shrink-0 flex items-center justify-center">
+          {leftPlayer && (
+            <OpponentSlot player={leftPlayer} isActive={leftPlayer.seat === currentTurn} pos="left" />
+          )}
+        </div>
 
-        {/* Chain — centered */}
-        <div className="flex-1 flex items-center justify-center overflow-x-auto">
+        <div className="flex-1 flex items-center justify-center overflow-hidden">
           <ChainView chain={chain} />
+        </div>
+
+        <div className="w-24 flex-shrink-0 flex flex-col items-center justify-center gap-2 py-1 pr-1">
+          {rightPlayer && (
+            <OpponentSlot player={rightPlayer} isActive={rightPlayer.seat === currentTurn} pos="right" />
+          )}
+          {settings.bazaarEnabled && bazaar.length > 0 && (
+            <div className="flex flex-col items-center gap-0.5 overflow-y-auto max-h-[45vh]">
+              <span className="text-[10px] text-tile-bg opacity-50">({bazaar.length})</span>
+              {bazaar.map(t => (
+                <motion.button key={t.id}
+                  whileHover={isMyTurn && !hasPlay ? { scale: 1.07 } : {}}
+                  whileTap={isMyTurn && !hasPlay ? { scale: 0.93 } : {}}
+                  onClick={isMyTurn && !hasPlay ? () => send({ type: 'draw_from_bazaar', tileId: t.id }) : undefined}
+                  className={isMyTurn && !hasPlay ? 'cursor-pointer' : 'cursor-default'}>
+                  <DominoBack size={20} />
+                </motion.button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── End selection (left / right) ──────────── */}
+      {/* Disconnected player warning — host only */}
+      {hasDisconnected && isHost && (
+        <div className="flex items-center justify-center gap-2 py-1 z-10 flex-shrink-0">
+          <span className="text-danger text-xs">A player is offline.</span>
+          <motion.button whileTap={{ scale: 0.93 }}
+            onClick={() => send({ type: 'restart_game' })}
+            className="text-xs bg-ui-card border border-danger text-danger rounded-lg px-3 py-1">
+            Restart to lobby
+          </motion.button>
+        </div>
+      )}
+
+      {/* End selection */}
       <AnimatePresence>
         {selectedTileId && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-            className="flex gap-3 justify-center pb-2 z-20">
-            <motion.button whileTap={{ scale: 0.93 }}
-              onClick={() => playTile('left')}
+            className="flex gap-3 justify-center pb-2 z-20 flex-shrink-0">
+            <motion.button whileTap={{ scale: 0.93 }} onClick={() => playTile('left')}
               className="bg-teamB text-white rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
-              ← Left
+              Left
             </motion.button>
-            <motion.button whileTap={{ scale: 0.93 }}
-              onClick={() => setSelectedTileId(null)}
+            <motion.button whileTap={{ scale: 0.93 }} onClick={() => setSelectedTileId(null)}
               className="bg-ui-card border border-ui-border rounded-xl px-5 py-2 text-lg">
-              ✕
+              X
             </motion.button>
-            <motion.button whileTap={{ scale: 0.93 }}
-              onClick={() => playTile('right')}
+            <motion.button whileTap={{ scale: 0.93 }} onClick={() => playTile('right')}
               className="bg-teamA text-ui-bg rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
-              Right →
+              Right
             </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── My hand ───────────────────────────────── */}
-      <div className="flex flex-col items-center gap-2 pb-4 px-2 z-10">
+      {/* My hand */}
+      <div className="flex flex-col items-center gap-2 pb-3 px-2 z-10 flex-shrink-0">
         <p className={`text-sm font-semibold px-3 py-0.5 rounded-full ${isMyTurn ? 'bg-teamA text-ui-bg' : 'bg-ui-card text-tile-bg'}`}>
-          {isMyTurn ? '🟢 Your turn' : `Turn: ${currentPlayer?.name ?? '?'}`}
+          {isMyTurn ? 'Your turn' : `Turn: ${currentPlayer?.name ?? '?'}`}
         </p>
-
         <div className="flex gap-2 flex-wrap justify-center px-2">
           {myHand.map(t => {
             const sel = selectedTileId === t.id;
@@ -154,9 +177,8 @@ export default function GamePage() {
             );
           })}
         </div>
-
         {isMyTurn && !hasPlay && bazaar.length === 0 && (
-          <motion.button whileTap={{ scale: 0.93 }} onClick={passTurn}
+          <motion.button whileTap={{ scale: 0.93 }} onClick={() => send({ type: 'pass_turn' })}
             className="bg-danger text-white rounded-xl px-5 py-2 text-lg font-semibold mt-1 shadow-tile">
             Pass
           </motion.button>
@@ -169,7 +191,52 @@ export default function GamePage() {
   );
 }
 
-// ── Chain renderer ────────────────────────────────────────────────────────────
+function OpponentSlot({ player, isActive, pos }: {
+  player: Player; isActive: boolean; pos: 'top' | 'left' | 'right';
+}) {
+  const count = player.handCount ?? player.hand.length;
+  const isVert = pos !== 'top';
+  const teamGlow = player.team === 'A' ? 'border-teamA shadow-[0_0_8px_2px_#f5a62366]'
+    : player.team === 'B' ? 'border-teamB shadow-[0_0_8px_2px_#7c6af566]'
+    : 'border-white shadow-[0_0_8px_2px_rgba(255,255,255,0.25)]';
+
+  const avatar = (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className={`w-10 h-10 rounded-full bg-ui-card border-2 flex items-center justify-center text-base transition-all
+        ${isActive ? `${teamGlow} animate-pulse` : 'border-ui-border'}
+        ${!player.connected ? 'opacity-50' : ''}`}>
+        {player.isHost ? '👑' : '👤'}
+      </div>
+      <span className="text-[11px] text-tile-bg max-w-[56px] truncate text-center leading-tight">{player.name}</span>
+      {!player.connected
+        ? <span className="text-[10px] text-danger leading-none">offline</span>
+        : isActive
+          ? <span className="text-[10px] text-teamA font-semibold leading-none">turn</span>
+          : null}
+    </div>
+  );
+
+  const tiles = count > 0 ? (
+    <div className={`flex ${isVert ? 'flex-col' : 'flex-row'} gap-0.5 items-center`}>
+      {Array.from({ length: Math.min(count, 7) }, (_, i) => (
+        <div key={i}
+          style={{ width: isVert ? 10 : 18, height: isVert ? 18 : 10 }}
+          className="bg-black border border-[#555] rounded-[2px] flex-shrink-0" />
+      ))}
+      {count > 7 && <span className="text-[10px] text-tile-bg opacity-50">+{count - 7}</span>}
+    </div>
+  ) : null;
+
+  if (pos === 'top') return (
+    <div className="flex flex-col items-center gap-1">{avatar}{tiles}</div>
+  );
+  if (pos === 'left') return (
+    <div className="flex flex-row-reverse items-center gap-1">{avatar}{tiles}</div>
+  );
+  return (
+    <div className="flex flex-row items-center gap-1">{avatar}{tiles}</div>
+  );
+}
 
 function ChainView({ chain }: { chain: ChainTile[] }) {
   if (!chain.length) {
@@ -179,32 +246,21 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
       </div>
     );
   }
-
   return (
-    <div className="flex flex-row items-center justify-center gap-0 px-4 py-3 min-h-[80px] flex-wrap">
+    <div className="flex flex-row items-center justify-center gap-0 px-2 py-3 min-h-[80px] flex-wrap">
       {chain.map((ct, i) => {
         const isDouble = ct.tile.left === ct.tile.right;
         const a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
         const b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
-
         return (
           <div key={ct.tile.id + i} className="flex items-center">
-            {i > 0 && !isDouble && <div className="w-0" />}
-            <DominoTileCard
-              left={a} right={b}
-              isDouble={isDouble}
-              orientation="normal"
-              size={TILE_HALF}
-              animate
-            />
+            <DominoTileCard left={a} right={b} isDouble={isDouble} orientation="normal" size={TILE_HALF} animate />
           </div>
         );
       })}
     </div>
   );
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function chainEndValue(chain: ChainTile[], end: 'left' | 'right'): number {
   if (!chain.length) return -1;
@@ -216,42 +272,34 @@ function chainEndValue(chain: ChainTile[], end: 'left' | 'right'): number {
   return l.orientation === 'normal' ? l.tile.right : l.tile.left;
 }
 
-function PlayerAvatar({ player, isActive, handCount }: {
-  player: { name: string; team: 'A' | 'B' | null; connected: boolean };
-  isActive: boolean;
-  handCount: number;
-}) {
-  const glowColor = player.team === 'A' ? 'text-teamA' : player.team === 'B' ? 'text-teamB' : 'text-white';
-  return (
-    <div className={`flex flex-col items-center gap-1 ${!player.connected ? 'opacity-40' : ''}`}>
-      <div className={`w-10 h-10 rounded-full bg-ui-card flex items-center justify-center text-lg border-2 ${
-        isActive ? `${glowColor} animate-pulse-glow border-current` : 'border-ui-border'
-      }`}>👤</div>
-      <span className="text-xs max-w-[64px] truncate text-center text-tile-bg">{player.name}</span>
-      <span className="text-sm font-semibold text-tile-bg">{handCount} 🀱</span>
-    </div>
-  );
-}
-
-function ScoreBar({ scores, settings, players }: {
+function ScoreBar({ scores, settings, players, isHost, onRestart }: {
   scores: Record<string, number>;
   settings: { mode: string; targetScore: number };
   players: { id: string; name: string; team: 'A' | 'B' | null }[];
+  isHost: boolean;
+  onRestart: () => void;
 }) {
   return (
-    <div className="flex justify-between items-center px-4 py-2 bg-ui-bg border-b border-ui-border z-10">
-      {settings.mode === 'teams' ? (
-        <>
-          <ScoreBadge label="🟡 A" score={scores['A'] ?? 0} target={settings.targetScore} color="teamA" />
-          <span className="text-ui-border text-sm">to {settings.targetScore}</span>
-          <ScoreBadge label="💜 B" score={scores['B'] ?? 0} target={settings.targetScore} color="teamB" />
-        </>
-      ) : (
-        <div className="flex gap-4 w-full overflow-x-auto">
-          {players.map(p => (
+    <div className="flex justify-between items-center px-3 py-2 bg-ui-bg border-b border-ui-border z-10 flex-shrink-0">
+      <div className="flex-1 flex items-center gap-4 overflow-x-auto">
+        {settings.mode === 'teams' ? (
+          <>
+            <ScoreBadge label="A" score={scores['A'] ?? 0} target={settings.targetScore} color="teamA" />
+            <span className="text-ui-border text-sm flex-shrink-0">to {settings.targetScore}</span>
+            <ScoreBadge label="B" score={scores['B'] ?? 0} target={settings.targetScore} color="teamB" />
+          </>
+        ) : (
+          players.map(p => (
             <ScoreBadge key={p.id} label={p.name} score={scores[p.id] ?? 0} target={settings.targetScore} color="teamA" />
-          ))}
-        </div>
+          ))
+        )}
+      </div>
+      {isHost && (
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onRestart}
+          title="Restart — return all players to lobby"
+          className="ml-2 text-sm text-tile-bg opacity-50 hover:opacity-100 px-2 py-1 rounded border border-ui-border flex-shrink-0 transition-opacity">
+          Restart
+        </motion.button>
       )}
     </div>
   );
@@ -264,11 +312,11 @@ function ScoreBadge({ label, score, target, color }: {
   const cls = color === 'teamA' ? 'text-teamA' : 'text-teamB';
   const barCls = color === 'teamA' ? 'bg-teamA' : 'bg-teamB';
   return (
-    <div className="flex flex-col items-center min-w-[56px]">
-      <span className="text-xs text-tile-bg opacity-70">{label}</span>
+    <div className="flex flex-col items-center min-w-[52px]">
+      <span className="text-xs text-tile-bg opacity-70 truncate max-w-[64px]">{label}</span>
       <motion.span key={score} initial={{ scale: 1.5 }} animate={{ scale: 1 }}
         className={`text-2xl font-bold leading-none ${cls}`}>{score}</motion.span>
-      <div className="w-12 h-1 bg-ui-border rounded-full mt-0.5">
+      <div className="w-10 h-1 bg-ui-border rounded-full mt-0.5">
         <div className={`h-full rounded-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
       </div>
     </div>

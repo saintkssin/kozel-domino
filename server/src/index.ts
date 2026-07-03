@@ -305,6 +305,26 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         broadcast(state);
         break;
       }
+
+      case 'restart_game': {
+        const state = socket.roomId ? getRoom(socket.roomId) : undefined;
+        if (!state) return;
+        const host = state.players.find(p => p.id === socket.playerId && p.isHost);
+        if (!host) return err(socket, 'Only the host can restart');
+        state.phase = 'lobby';
+        state.chain = [];
+        state.bazaar = [];
+        state.players.forEach(p => { p.hand = []; p.ready = false; });
+        state.scores = initScores(state.settings);
+        if (state.settings.mode === 'ffa') state.players.forEach(p => { state.scores[p.id] = 0; });
+        state.roundWinner = undefined;
+        state.roundWinReason = undefined;
+        state.goats = undefined;
+        state.currentTurn = 0;
+        updateRoom(state);
+        broadcast(state);
+        break;
+      }
     }
   });
 
