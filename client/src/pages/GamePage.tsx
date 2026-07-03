@@ -257,7 +257,7 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
   }
 
   return (
-    <div className="inline-flex flex-col gap-0 p-2">
+    <div className="inline-flex flex-col-reverse gap-0 p-2">
       {rows.map(({ tiles, rtl }, ri) => (
         <div key={ri} className={`flex ${rtl ? 'flex-row-reverse' : 'flex-row'} items-center gap-0`}>
           {tiles.map((ct) => {
