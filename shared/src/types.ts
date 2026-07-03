@@ -54,7 +54,8 @@ export type ClientToServer =
   | { type: 'start_next_round' }
   | { type: 'play_tile'; tileId: string; end: 'left' | 'right' }
   | { type: 'draw_from_bazaar'; tileId: string }
-  | { type: 'pass_turn' };
+  | { type: 'pass_turn' }
+  | { type: 'leave_room' };
 
 export type ServerToClient =
   | { type: 'room_state'; state: GameState }

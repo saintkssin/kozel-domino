@@ -14,7 +14,11 @@ type Store = {
   send: (msg: ClientToServer) => void;
   clearError: () => void;
   dismissPopup: (id: number) => void;
+  leaveRoom: () => void;
 };
+
+// suppress unused import warning
+void DEFAULT_SETTINGS;
 
 let popupCounter = 0;
 
@@ -32,7 +36,6 @@ export const useGameStore = create<Store>((set, get) => ({
 
     socket.on('connect', () => {
       set({ myPlayerId: socket.id });
-      // Attempt reconnect if token stored
       const token = localStorage.getItem('kozel_session_token');
       const roomId = localStorage.getItem('kozel_room_id');
       if (token && roomId) {
@@ -72,4 +75,11 @@ export const useGameStore = create<Store>((set, get) => ({
 
   clearError() { set({ error: null }); },
   dismissPopup(id) { set(s => ({ scorePopups: s.scorePopups.filter(p => p.id !== id) })); },
+
+  leaveRoom() {
+    get().socket?.emit('message', { type: 'leave_room' } as ClientToServer);
+    localStorage.removeItem('kozel_session_token');
+    localStorage.removeItem('kozel_room_id');
+    set({ gameState: null });
+  },
 }));

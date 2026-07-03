@@ -48,13 +48,14 @@ type TileProps = {
   selected?: boolean;
   playable?: boolean;
   animate?: boolean;
+  shake?: boolean;
   onClick?: () => void;
 };
 
 export function DominoTileCard({
   left, right, isDouble, orientation = 'normal',
   layout = 'auto',
-  size = 28, selected, playable = true, animate = false, onClick,
+  size = 28, selected, playable = true, animate = false, shake = false, onClick,
 }: TileProps) {
   const a = orientation === 'normal' ? left : right;
   const b = orientation === 'normal' ? right : left;
@@ -100,9 +101,11 @@ export function DominoTileCard({
   return (
     <motion.button
       onClick={onClick}
-      whileHover={playable ? { y: -5, scale: 1.06 } : {}}
-      whileTap={playable ? { scale: 0.93 } : {}}
-      className={!playable ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+      whileHover={{ y: -5, scale: 1.06 }}
+      whileTap={{ scale: 0.93 }}
+      animate={shake ? { x: [-6, 6, -4, 4, -2, 2, 0] } : { x: 0 }}
+      transition={shake ? { duration: 0.35 } : {}}
+      className="cursor-pointer"
     >
       {animate ? (
         <motion.div initial={{ y: -12, opacity: 0, scale: 0.85 }}

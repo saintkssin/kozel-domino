@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/useGameStore';
 import { ChainTile, DominoTile } from '@kozel/shared';
@@ -6,10 +6,10 @@ import { DominoTileCard, DominoBack } from '../components/DominoTile';
 import RoundOverlay from '../components/RoundOverlay';
 import MatchOverlay from '../components/MatchOverlay';
 
-const TILE_HALF = 32; // px — half-tile square size
+const TILE_HALF = 40; // px — half-tile square size
 
 export default function GamePage() {
-  const { gameState, myPlayerId, send } = useGameStore();
+  const { gameState, myPlayerId, send, error } = useGameStore();
   if (!gameState) return null;
 
   const { players, chain, bazaar, currentTurn, scores, phase, settings } = gameState;
@@ -19,18 +19,32 @@ export default function GamePage() {
   const currentPlayer = players.find(p => p.seat === currentTurn);
 
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
+  const [shakeId, setShakeId] = useState<string | null>(null);
+  const lastPlayedRef = useRef<string | null>(null);
 
-  function canPlayTile(tile: DominoTile): boolean {
+  const hasPlay = myHand.some(t => {
     if (!chain.length) return true;
     const l = chainEndValue(chain, 'left');
     const r = chainEndValue(chain, 'right');
-    return tile.left === l || tile.right === l || tile.left === r || tile.right === r;
-  }
+    return t.left === l || t.right === l || t.left === r || t.right === r;
+  });
 
-  const hasPlay = myHand.some(canPlayTile);
+  // Shake tile on server error
+  useEffect(() => {
+    if (!error) return;
+    const target = lastPlayedRef.current;
+    if (target) {
+      setShakeId(target);
+      setSelectedTileId(target); // re-select so user can retry
+      lastPlayedRef.current = null;
+      const t = setTimeout(() => setShakeId(null), 450);
+      return () => clearTimeout(t);
+    }
+  }, [error]);
 
   function playTile(end: 'left' | 'right') {
     if (!selectedTileId) return;
+    lastPlayedRef.current = selectedTileId;
     send({ type: 'play_tile', tileId: selectedTileId, end });
     setSelectedTileId(null);
   }
@@ -64,18 +78,20 @@ export default function GamePage() {
       {/* ── Main table area ───────────────────────── */}
       <div className="flex-1 flex items-center justify-center relative z-10 py-2">
 
-        {/* Bazaar — open, face-up, clickable when no valid play */}
+        {/* Bazaar — face-down tiles on the right, clickable when no valid play */}
         {settings.bazaarEnabled && bazaar.length > 0 && (
           <div className="absolute right-2 top-2 bottom-2 flex flex-col items-center gap-1 overflow-y-auto max-h-full">
             <span className="text-xs text-tile-bg opacity-60 mb-1">Базар ({bazaar.length})</span>
             {bazaar.map(t => (
-              <DominoTileCard key={t.id}
-                left={t.left} right={t.right}
-                layout="vertical"
-                size={TILE_HALF - 6}
-                playable={isMyTurn && !hasPlay}
+              <motion.button
+                key={t.id}
+                whileHover={isMyTurn && !hasPlay ? { scale: 1.07, y: -3 } : {}}
+                whileTap={isMyTurn && !hasPlay ? { scale: 0.93 } : {}}
                 onClick={isMyTurn && !hasPlay ? () => drawFromBazaar(t.id) : undefined}
-              />
+                className={isMyTurn && !hasPlay ? 'cursor-pointer' : 'cursor-default'}
+              >
+                <DominoBack size={TILE_HALF - 10} />
+              </motion.button>
             ))}
           </div>
         )}
@@ -118,7 +134,6 @@ export default function GamePage() {
 
         <div className="flex gap-2 flex-wrap justify-center px-2">
           {myHand.map(t => {
-            const playable = isMyTurn && canPlayTile(t);
             const sel = selectedTileId === t.id;
             return (
               <DominoTileCard key={t.id}
@@ -126,12 +141,15 @@ export default function GamePage() {
                 layout="vertical"
                 size={TILE_HALF + 8}
                 selected={sel}
-                playable={playable}
-                onClick={() => {
-                  if (!playable) return;
-                  if (chain.length === 0) { send({ type: 'play_tile', tileId: t.id, end: 'right' }); return; }
+                shake={shakeId === t.id}
+                onClick={isMyTurn ? () => {
+                  if (chain.length === 0) {
+                    lastPlayedRef.current = t.id;
+                    send({ type: 'play_tile', tileId: t.id, end: 'right' });
+                    return;
+                  }
                   setSelectedTileId(sel ? null : t.id);
-                }}
+                } : undefined}
               />
             );
           })}
@@ -169,7 +187,6 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
         const a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
         const b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
 
-        // Connect marker between tiles
         return (
           <div key={ct.tile.id + i} className="flex items-center">
             {i > 0 && !isDouble && <div className="w-0" />}

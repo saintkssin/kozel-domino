@@ -125,10 +125,15 @@ export function scoreKey(state: GameState, player: { id: string; team: 'A' | 'B'
 export function checkRoundEnd(state: GameState): { ended: boolean; winnerKey?: string; reason?: string } {
   const activePlayers = state.players.filter(p => p.connected || p.hand.length > 0);
 
-  // Fish: someone emptied their hand
+  // Fish: someone emptied their hand — winner gets opponent pip bonus (rounded to 5)
   const fishPlayer = activePlayers.find(p => p.hand.length === 0);
   if (fishPlayer) {
     const key = scoreKey(state, fishPlayer);
+    const opponentPips = state.players
+      .filter(p => scoreKey(state, p) !== key)
+      .reduce((sum, p) => sum + p.hand.reduce((s, t) => s + t.left + t.right, 0), 0);
+    const bonus = Math.floor(opponentPips / 5) * 5;
+    if (bonus > 0) addScore(state, fishPlayer, bonus);
     return { ended: true, winnerKey: key, reason: 'риба' };
   }
 

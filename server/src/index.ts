@@ -257,8 +257,40 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         if (state.bazaar.length > 0) return err(socket, 'Базар не порожній — можна взяти кістку');
         if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'У вас є хід');
         nextTurn(state);
+        const round = checkRoundEnd(state);
+        if (round.ended) {
+          if (checkMatchEnd(state)) {
+            state.phase = 'matchEnd';
+            state.goats = computeGoats(state);
+            io.to(state.roomId).emit('match_end', {
+              type: 'match_end', scores: state.scores, goats: state.goats,
+            });
+          } else {
+            state.phase = 'roundEnd';
+            state.roundWinner = round.winnerKey;
+            state.roundWinReason = round.reason;
+            io.to(state.roomId).emit('round_result', {
+              type: 'round_result',
+              winnerKey: round.winnerKey!, reason: round.reason!, scores: state.scores,
+            });
+          }
+        }
         updateRoom(state);
         broadcast(state);
+        break;
+      }
+
+      case 'leave_room': {
+        if (!socket.roomId || !socket.playerId) return;
+        const state = getRoom(socket.roomId);
+        if (state) {
+          state.players = state.players.filter(p => p.id !== socket.playerId);
+          if (!state.players.length) { deleteRoom(socket.roomId); }
+          else { updateRoom(state); broadcast(state); }
+        }
+        socket.leave(socket.roomId);
+        socket.roomId = undefined;
+        socket.playerId = undefined;
         break;
       }
 

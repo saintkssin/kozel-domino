@@ -4,7 +4,7 @@ import { useGameStore } from '../store/useGameStore';
 import { Player } from '@kozel/shared';
 
 export default function LobbyPage() {
-  const { gameState, myPlayerId, send } = useGameStore();
+  const { gameState, myPlayerId, send, leaveRoom } = useGameStore();
   if (!gameState) return null;
 
   const { roomId, players, settings } = gameState;
@@ -98,6 +98,14 @@ export default function LobbyPage() {
             🎲 Почати гру
           </motion.button>
         )}
+
+        <motion.button
+          whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.03 }}
+          onClick={leaveRoom}
+          className="rounded-2xl px-6 py-3 text-lg text-danger border border-danger opacity-70 hover:opacity-100 transition-opacity"
+        >
+          ← Вийти
+        </motion.button>
       </div>
     </div>
   );
