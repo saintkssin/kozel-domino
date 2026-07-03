@@ -265,9 +265,12 @@ function SnakeTile({ ct, flipPips, isVert }: { ct: ChainTile; flipPips?: boolean
   let a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
   let b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
   if (flipPips) [a, b] = [b, a];
+  // Vertical segment: non-doubles → portrait; doubles → landscape (perpendicular, opposite to horizontal)
+  const layout = isVert && !isDouble ? 'vertical' : 'auto';
+  const effectiveDouble = isVert ? false : isDouble; // suppress auto-vertical for doubles in vert segment
   return (
-    <DominoTileCard left={a} right={b} isDouble={isDouble}
-      layout={isVert ? 'vertical' : 'auto'} size={TILE_HALF} animate />
+    <DominoTileCard left={a} right={b} isDouble={effectiveDouble}
+      layout={layout} size={TILE_HALF} animate />
   );
 }
 
@@ -300,19 +303,19 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
             {/* vertical column on LEFT (v-left, for RTL levels) */}
             {v && !isLtr && (
               <div className="flex flex-col-reverse items-center gap-0">
-                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert />)}
+                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert flipPips />)}
               </div>
             )}
 
-            {/* horizontal row */}
-            <div className={`flex ${isLtr ? 'flex-row' : 'flex-row-reverse'} items-end gap-0`}>
+            {/* horizontal row — items-center so doubles are centred, not bottom-aligned */}
+            <div className={`flex ${isLtr ? 'flex-row' : 'flex-row-reverse'} items-center gap-0`}>
               {h.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} flipPips={!isLtr} />)}
             </div>
 
             {/* vertical column on RIGHT (v-right, for LTR levels) */}
             {v && isLtr && (
               <div className="flex flex-col-reverse items-center gap-0">
-                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert />)}
+                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert flipPips />)}
               </div>
             )}
           </div>
