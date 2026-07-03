@@ -123,9 +123,9 @@ export function DominoBack({ size = 28 }: { size?: number }) {
   return (
     <div
       style={{ width: size * 2, height: size, borderRadius: size * 0.15 }}
-      className="bg-tile-back border border-felt-light shadow-tile flex items-center justify-center"
+      className="bg-black border border-[#333] shadow-tile flex items-center justify-center"
     >
-      <div className="w-3/4 h-3/4 border border-felt-light rounded opacity-40" />
+      <div className="w-3/4 h-3/4 border border-[#444] rounded opacity-60" />
     </div>
   );
 }

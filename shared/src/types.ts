@@ -16,6 +16,7 @@ export type Player = {
   seat: number;
   team: 'A' | 'B' | null;
   hand: DominoTile[];
+  handCount?: number; // set server-side for masked opponents
   connected: boolean;
   ready: boolean;
   isHost: boolean;

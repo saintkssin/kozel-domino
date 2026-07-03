@@ -70,7 +70,7 @@ export default function GamePage() {
         {opponents.map(p => (
           <PlayerAvatar key={p.id} player={p}
             isActive={p.seat === currentTurn}
-            handCount={(p.hand as DominoTile[]).length}
+            handCount={p.handCount ?? p.hand.length}
           />
         ))}
       </div>
@@ -90,7 +90,7 @@ export default function GamePage() {
                 onClick={isMyTurn && !hasPlay ? () => drawFromBazaar(t.id) : undefined}
                 className={isMyTurn && !hasPlay ? 'cursor-pointer' : 'cursor-default'}
               >
-                <DominoBack size={TILE_HALF - 10} />
+                <DominoBack size={TILE_HALF - 4} />
               </motion.button>
             ))}
           </div>
@@ -228,7 +228,7 @@ function PlayerAvatar({ player, isActive, handCount }: {
         isActive ? `${glowColor} animate-pulse-glow border-current` : 'border-ui-border'
       }`}>👤</div>
       <span className="text-xs max-w-[64px] truncate text-center text-tile-bg">{player.name}</span>
-      <span className="text-xs text-felt-light">{handCount} к.</span>
+      <span className="text-sm font-semibold text-tile-bg">{handCount} 🀱</span>
     </div>
   );
 }

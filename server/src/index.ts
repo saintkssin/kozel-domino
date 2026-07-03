@@ -51,7 +51,7 @@ function broadcast(state: GameState) {
       const masked: GameState = {
         ...state,
         players: players.map(pl =>
-          pl.id === p.id ? pl : { ...pl, hand: [] },
+          pl.id === p.id ? pl : { ...pl, handCount: pl.hand.length, hand: [] },
         ),
       };
       io.to(socketId).emit('room_state', { type: 'room_state', state: masked });
