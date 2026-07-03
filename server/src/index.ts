@@ -195,14 +195,6 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         const result = placeTile(state, msg.tileId, msg.end);
         if (!result.ok) return err(socket, result.error!);
 
-        if (result.scoreDelta && result.scoreDelta > 0) {
-          const key = scoreKey(state, p);
-          io.to(state.roomId).emit('score_update', {
-            type: 'score_update', scoreKey: key,
-            delta: result.scoreDelta, total: state.scores[key] ?? 0,
-          });
-        }
-
         const round = checkRoundEnd(state);
         if (round.ended) {
           if (checkMatchEnd(state)) {

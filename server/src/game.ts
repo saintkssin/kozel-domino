@@ -96,20 +96,10 @@ export function placeTile(
 
   player.hand.splice(tileIdx, 1);
 
-  const delta = calcScoreDelta(state);
-  if (delta > 0) addScore(state, player, delta);
-
-  return { ok: true, scoreDelta: delta };
+  return { ok: true };
 }
 
 // ── Scoring ──────────────────────────────────────────────────────────────────
-
-function calcScoreDelta(state: GameState): number {
-  const { chain } = state;
-  if (chain.length < 3) return 0;
-  const sum = chainLeftValue(chain) + chainRightValue(chain);
-  return sum % 5 === 0 ? sum : 0;
-}
 
 export function addScore(state: GameState, player: { id: string; team: 'A' | 'B' | null }, delta: number): void {
   const key = state.settings.mode === 'teams' ? (player.team ?? player.id) : player.id;
