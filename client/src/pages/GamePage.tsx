@@ -241,6 +241,36 @@ function OpponentSlot({ player, isActive, pos }: {
   );
 }
 
+// Snake pattern: 10 horizontal → 7 vertical → 10 horizontal (opposite) → 7 vertical → …
+const H_MAX = 10;
+const V_MAX = 7;
+type SegKind = 'h-ltr' | 'v-right' | 'h-rtl' | 'v-left';
+const SEG_CYCLE: [SegKind, number][] = [
+  ['h-ltr', H_MAX], ['v-right', V_MAX], ['h-rtl', H_MAX], ['v-left', V_MAX],
+];
+
+function buildSegs(chain: ChainTile[]) {
+  const segs: { kind: SegKind; tiles: ChainTile[] }[] = [];
+  let i = 0;
+  while (i < chain.length) {
+    const [kind, max] = SEG_CYCLE[segs.length % 4];
+    segs.push({ kind, tiles: chain.slice(i, i + max) });
+    i += max;
+  }
+  return segs;
+}
+
+function SnakeTile({ ct, flipPips, isVert }: { ct: ChainTile; flipPips?: boolean; isVert?: boolean }) {
+  const isDouble = ct.tile.left === ct.tile.right;
+  let a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
+  let b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
+  if (flipPips) [a, b] = [b, a];
+  return (
+    <DominoTileCard left={a} right={b} isDouble={isDouble}
+      layout={isVert ? 'vertical' : 'auto'} size={TILE_HALF} animate />
+  );
+}
+
 function ChainView({ chain }: { chain: ChainTile[] }) {
   if (!chain.length) {
     return (
@@ -250,29 +280,44 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
     );
   }
 
-  const ROW = 10;
-  const rows: { tiles: ChainTile[]; rtl: boolean }[] = [];
-  for (let i = 0; i < chain.length; i += ROW) {
-    rows.push({ tiles: chain.slice(i, i + ROW), rtl: rows.length % 2 !== 0 });
-  }
+  const segs = buildSegs(chain);
+
+  // Pair segments into levels: each level = one horizontal + optional vertical turn
+  // Level 0: [h-ltr][v-right]  → ltr row, vertical on right
+  // Level 1: [v-left][h-rtl]   → vertical on left, rtl row
+  // Level 2: [h-ltr][v-right]  → etc.
+  const levels = Array.from({ length: Math.ceil(segs.length / 2) }, (_, li) => ({
+    h: segs[li * 2],
+    v: segs[li * 2 + 1],
+  }));
 
   return (
-    <div className="inline-flex flex-col-reverse gap-0 p-2">
-      {rows.map(({ tiles, rtl }, ri) => (
-        <div key={ri} className={`flex ${rtl ? 'flex-row-reverse' : 'flex-row'} items-center gap-0`}>
-          {tiles.map((ct) => {
-            const isDouble = ct.tile.left === ct.tile.right;
-            let a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
-            let b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
-            if (rtl) [a, b] = [b, a];
-            return (
-              <DominoTileCard key={ct.tile.id + ri}
-                left={a} right={b} isDouble={isDouble}
-                orientation="normal" size={TILE_HALF} animate />
-            );
-          })}
-        </div>
-      ))}
+    <div className="inline-flex flex-col-reverse items-start gap-0 p-2">
+      {levels.map(({ h, v }, li) => {
+        const isLtr = h.kind === 'h-ltr';
+        return (
+          <div key={li} className="flex flex-row items-end gap-0">
+            {/* vertical column on LEFT (v-left, for RTL levels) */}
+            {v && !isLtr && (
+              <div className="flex flex-col-reverse items-center gap-0">
+                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert />)}
+              </div>
+            )}
+
+            {/* horizontal row */}
+            <div className={`flex ${isLtr ? 'flex-row' : 'flex-row-reverse'} items-end gap-0`}>
+              {h.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} flipPips={!isLtr} />)}
+            </div>
+
+            {/* vertical column on RIGHT (v-right, for LTR levels) */}
+            {v && isLtr && (
+              <div className="flex flex-col-reverse items-center gap-0">
+                {v.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} isVert />)}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
