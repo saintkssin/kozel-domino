@@ -236,8 +236,8 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         if (!p || p.seat !== state.currentTurn) return err(socket, 'Не ваш хід');
         if (hasAnyPlay(p.hand, state.chain)) return err(socket, 'У вас є хід — базар недоступний');
 
-        if (state.bazaar.length === 0) return err(socket, 'Базар порожній');
-        const idx = Math.floor(Math.random() * state.bazaar.length);
+        const idx = state.bazaar.findIndex(t => t.id === msg.tileId);
+        if (idx === -1) return err(socket, 'Кістка не в базарі');
         const [drawn] = state.bazaar.splice(idx, 1);
         p.hand.push(drawn);
 

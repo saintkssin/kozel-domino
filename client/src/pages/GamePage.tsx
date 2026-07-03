@@ -35,8 +35,8 @@ export default function GamePage() {
     setSelectedTileId(null);
   }
 
-  function drawFromBazaar() {
-    send({ type: 'draw_from_bazaar' });
+  function drawFromBazaar(tileId: string) {
+    send({ type: 'draw_from_bazaar', tileId });
   }
 
   function passTurn() {
@@ -64,27 +64,19 @@ export default function GamePage() {
       {/* ── Main table area ───────────────────────── */}
       <div className="flex-1 flex items-center justify-center relative z-10 py-2">
 
-        {/* Bazaar stack — right side */}
+        {/* Bazaar — open, face-up, clickable when no valid play */}
         {settings.bazaarEnabled && bazaar.length > 0 && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
-            {/* Stacked face-down tiles (show up to 5 visual layers) */}
-            <div className="relative" style={{ width: TILE_HALF * 2 + 4, height: TILE_HALF + (Math.min(bazaar.length, 5) - 1) * 4 }}>
-              {Array.from({ length: Math.min(bazaar.length, 5) }).map((_, i) => (
-                <div key={i} className="absolute" style={{ bottom: i * 4, left: i * 0, zIndex: i }}>
-                  <DominoBack size={TILE_HALF} />
-                </div>
-              ))}
-            </div>
-            <span className="text-felt-border bg-ui-card border border-ui-border rounded-full px-2 py-0.5 text-xs font-semibold text-tile-bg">
-              {bazaar.length}
-            </span>
-            {isMyTurn && !hasPlay && (
-              <motion.button whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.05 }}
-                onClick={drawFromBazaar}
-                className="bg-teamA text-ui-bg rounded-xl px-3 py-1 text-sm font-bold shadow-tile mt-1">
-                Взяти
-              </motion.button>
-            )}
+          <div className="absolute right-2 top-2 bottom-2 flex flex-col items-center gap-1 overflow-y-auto max-h-full">
+            <span className="text-xs text-tile-bg opacity-60 mb-1">Базар ({bazaar.length})</span>
+            {bazaar.map(t => (
+              <DominoTileCard key={t.id}
+                left={t.left} right={t.right}
+                isDouble={t.left === t.right}
+                size={TILE_HALF - 6}
+                playable={isMyTurn && !hasPlay}
+                onClick={isMyTurn && !hasPlay ? () => drawFromBazaar(t.id) : undefined}
+              />
+            ))}
           </div>
         )}
 
