@@ -220,10 +220,13 @@ function OpponentSlot({ player, isActive, pos }: {
     <div className={`flex ${isVert ? 'flex-col' : 'flex-row'} gap-0.5 items-center`}>
       {Array.from({ length: Math.min(count, 7) }, (_, i) => (
         <div key={i}
-          style={{ width: isVert ? 10 : 18, height: isVert ? 18 : 10 }}
-          className="bg-black border border-[#555] rounded-[2px] flex-shrink-0" />
+          style={{ width: isVert ? 11 : 20, height: isVert ? 20 : 11 }}
+          className="bg-[#0d1b2e] border border-[#3a5a8a] rounded-[3px] flex-shrink-0 flex items-center justify-center">
+          <div style={{ width: isVert ? 5 : 11, height: isVert ? 11 : 5 }}
+            className="border border-[#2a4570] rounded-[1px] opacity-70" />
+        </div>
       ))}
-      {count > 7 && <span className="text-[10px] text-tile-bg opacity-50">+{count - 7}</span>}
+      <span className="text-[12px] font-bold text-white opacity-80 leading-none">{count}</span>
     </div>
   ) : null;
 
