@@ -63,7 +63,7 @@ function err(socket: Socket, msg: string) {
   socket.emit('error', { type: 'error', message: msg });
 }
 
-io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) => {
+io.on('connection', (socket: Socket & { playerId?: string; roomId?: string; reconnectId?: string }) => {
   socket.on('message', (msg: ClientToServer) => {
     switch (msg.type) {
 
@@ -333,6 +333,12 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         broadcast(state);
         break;
       }
+
+      case 'set_reconnect_id': {
+        // Register a persistent client UUID as the reconnect token (set on join, used on disconnect)
+        socket.reconnectId = msg.reconnectId;
+        break;
+      }
     }
   });
 
@@ -346,7 +352,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
     updateRoom(state);
     broadcast(state);
 
-    scheduleReconnect(socket.id, socket.roomId, socket.playerId, () => {
+    scheduleReconnect(socket.reconnectId ?? socket.id, socket.roomId, socket.playerId, () => {
       const s = getRoom(socket.roomId!);
       if (!s) return;
       s.players = s.players.filter(pl => pl.id !== socket.playerId);

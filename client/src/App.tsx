@@ -7,11 +7,11 @@ import ErrorToast from './components/ErrorToast';
 import ScorePopups from './components/ScorePopups';
 
 export default function App() {
-  const { connect, gameState } = useGameStore();
+  const { connect, gameState, showMenu } = useGameStore();
 
   useEffect(() => { connect(); }, [connect]);
 
-  const page = !gameState ? 'home'
+  const page = !gameState || showMenu ? 'home'
     : gameState.phase === 'lobby' ? 'lobby'
     : 'game';
 

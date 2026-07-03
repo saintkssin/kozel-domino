@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../store/useGameStore';
 import { DEFAULT_SETTINGS, RoomSettings } from '@kozel/shared';
 
+
 export default function HomePage() {
-  const { send } = useGameStore();
+  const { send, gameState, resumeGame, leaveRoom } = useGameStore();
   const [name, setName] = useState(() => localStorage.getItem('kozel_name') || '');
   const [joinId, setJoinId] = useState('');
   const [mode, setMode] = useState<'home' | 'create' | 'join'>('home');
@@ -33,6 +34,21 @@ export default function HomePage() {
         </h1>
         <p className="text-bg-3 text-xl mt-2 tracking-widest uppercase">Domino online</p>
       </motion.div>
+
+      {gameState && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="w-72 bg-ui-card border border-teamA rounded-2xl p-4 flex flex-col gap-3">
+          <div className="text-center">
+            <span className="text-teamA font-semibold text-lg">Active game</span>
+            <div className="text-sm text-tile-bg opacity-70 mt-0.5">
+              Room <span className="font-mono tracking-widest text-white">{gameState.roomId}</span>
+              {' · '}{gameState.players.length} players
+            </div>
+          </div>
+          <Btn onClick={resumeGame} color="teamA">Resume ↩</Btn>
+          <Btn onClick={leaveRoom} color="none">Leave room</Btn>
+        </motion.div>
+      )}
 
       <input
         className="bg-bg-2 border-2 border-bg-3 rounded-2xl px-5 py-3 text-xl text-center w-72 outline-none focus:border-teamA transition-colors"

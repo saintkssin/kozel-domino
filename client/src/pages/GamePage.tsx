@@ -22,7 +22,7 @@ function assignPositions(mySeat: number, players: Player[]): Record<string, 'top
 }
 
 export default function GamePage() {
-  const { gameState, myPlayerId, send, error } = useGameStore();
+  const { gameState, myPlayerId, send, error, goToMenu } = useGameStore();
   if (!gameState) return null;
 
   const { players, chain, bazaar, currentTurn, scores, phase, settings } = gameState;
@@ -74,7 +74,8 @@ export default function GamePage() {
 
       <ScoreBar scores={scores} settings={settings} players={players}
         isHost={isHost}
-        onRestart={() => send({ type: 'restart_game' })} />
+        onRestart={() => send({ type: 'restart_game' })}
+        onMenu={goToMenu} />
 
       {/* Top opponent */}
       {topPlayer && (
@@ -96,7 +97,7 @@ export default function GamePage() {
           <ChainView chain={chain} />
         </div>
 
-        <div className="w-24 flex-shrink-0 flex flex-col items-center justify-center gap-2 py-1 pr-1">
+        <div className="w-28 flex-shrink-0 flex flex-col items-center justify-center gap-2 py-1 pr-1">
           {rightPlayer && (
             <OpponentSlot player={rightPlayer} isActive={rightPlayer.seat === currentTurn} pos="right" />
           )}
@@ -109,7 +110,7 @@ export default function GamePage() {
                   whileTap={isMyTurn && !hasPlay ? { scale: 0.93 } : {}}
                   onClick={isMyTurn && !hasPlay ? () => send({ type: 'draw_from_bazaar', tileId: t.id }) : undefined}
                   className={isMyTurn && !hasPlay ? 'cursor-pointer' : 'cursor-default'}>
-                  <DominoBack size={20} />
+                  <DominoBack size={28} />
                 </motion.button>
               ))}
             </div>
@@ -220,10 +221,9 @@ function OpponentSlot({ player, isActive, pos }: {
     <div className={`flex ${isVert ? 'flex-col' : 'flex-row'} gap-0.5 items-center`}>
       {Array.from({ length: Math.min(count, 7) }, (_, i) => (
         <div key={i}
-          style={{ width: isVert ? 11 : 20, height: isVert ? 20 : 11 }}
-          className="bg-[#0d1b2e] border border-[#3a5a8a] rounded-[3px] flex-shrink-0 flex items-center justify-center">
-          <div style={{ width: isVert ? 5 : 11, height: isVert ? 11 : 5 }}
-            className="border border-[#2a4570] rounded-[1px] opacity-70" />
+          style={{ width: 12, height: 24, borderRadius: 2 }}
+          className="bg-black border border-[#333] shadow-tile flex items-center justify-center flex-shrink-0">
+          <div className="w-3/4 h-3/4 border border-[#444] rounded-[2px] opacity-60" />
         </div>
       ))}
       <span className="text-[12px] font-bold text-white opacity-80 leading-none">{count}</span>
@@ -288,15 +288,21 @@ function chainEndValue(chain: ChainTile[], end: 'left' | 'right'): number {
   return l.orientation === 'normal' ? l.tile.right : l.tile.left;
 }
 
-function ScoreBar({ scores, settings, players, isHost, onRestart }: {
+function ScoreBar({ scores, settings, players, isHost, onRestart, onMenu }: {
   scores: Record<string, number>;
   settings: { mode: string; targetScore: number };
   players: { id: string; name: string; team: 'A' | 'B' | null }[];
   isHost: boolean;
   onRestart: () => void;
+  onMenu: () => void;
 }) {
   return (
     <div className="flex justify-between items-center px-3 py-2 bg-ui-bg border-b border-ui-border z-10 flex-shrink-0">
+      <motion.button whileTap={{ scale: 0.9 }} onClick={onMenu}
+        title="Back to menu"
+        className="text-sm text-tile-bg opacity-50 hover:opacity-100 px-2 py-1 rounded border border-ui-border flex-shrink-0 transition-opacity mr-2">
+        ←
+      </motion.button>
       <div className="flex-1 flex items-center gap-4 overflow-x-auto">
         {settings.mode === 'teams' ? (
           <>

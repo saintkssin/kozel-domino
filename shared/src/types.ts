@@ -58,7 +58,8 @@ export type ClientToServer =
   | { type: 'pass_turn' }
   | { type: 'leave_room' }
   | { type: 'restart_game' }
-  | { type: 'reconnect'; token: string };
+  | { type: 'reconnect'; token: string }
+  | { type: 'set_reconnect_id'; reconnectId: string };
 
 export type ServerToClient =
   | { type: 'room_state'; state: GameState }
