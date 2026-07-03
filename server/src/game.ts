@@ -106,7 +106,7 @@ export function placeTile(
 
 function calcScoreDelta(state: GameState): number {
   const { chain } = state;
-  if (!chain.length) return 0;
+  if (chain.length < 2) return 0; // first tile has no distinct open ends
   const sum = chainLeftValue(chain) + chainRightValue(chain);
   return sum % 5 === 0 ? sum : 0;
 }
