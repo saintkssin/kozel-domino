@@ -27,7 +27,7 @@ export const useGameStore = create<Store>((set, get) => ({
 
   connect() {
     if (get().socket) return;
-    const url = import.meta.env.VITE_SOCKET_URL || '';
+    const url = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     const socket = io(url, { transports: ['websocket'] });
 
     socket.on('connect', () => {

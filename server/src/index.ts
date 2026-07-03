@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
 import {
   ClientToServer, GameState, Player, DEFAULT_SETTINGS,
 } from '@kozel/shared';
@@ -27,6 +28,11 @@ const io = new Server<ClientToServer, any>(httpServer, {
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+// Serve built client in production
+const clientDist = path.resolve(__dirname, '../../../client/dist');
+app.use(express.static(clientDist));
+app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')));
 
 // ── Socket handler ───────────────────────────────────────────────────────────
 
