@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/useGameStore';
-import { DominoTile, ChainTile } from '@kozel/shared';
+import { ChainTile, DominoTile } from '@kozel/shared';
+import { DominoTileCard, DominoBack } from '../components/DominoTile';
 import RoundOverlay from '../components/RoundOverlay';
 import MatchOverlay from '../components/MatchOverlay';
+
+const TILE_HALF = 32; // px — half-tile square size
 
 export default function GamePage() {
   const { gameState, myPlayerId, send } = useGameStore();
@@ -15,119 +18,137 @@ export default function GamePage() {
   const isMyTurn = me?.seat === currentTurn;
   const currentPlayer = players.find(p => p.seat === currentTurn);
 
-  const [selectedTile, setSelectedTile] = useState<string | null>(null);
+  const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
 
   function canPlayTile(tile: DominoTile): boolean {
     if (!chain.length) return true;
-    const l = chainLeft(chain); const r = chainRight(chain);
+    const l = chainEndValue(chain, 'left');
+    const r = chainEndValue(chain, 'right');
     return tile.left === l || tile.right === l || tile.left === r || tile.right === r;
   }
 
+  const hasPlay = myHand.some(canPlayTile);
+
   function playTile(end: 'left' | 'right') {
-    if (!selectedTile) return;
-    send({ type: 'play_tile', tileId: selectedTile, end });
-    setSelectedTile(null);
+    if (!selectedTileId) return;
+    send({ type: 'play_tile', tileId: selectedTileId, end });
+    setSelectedTileId(null);
   }
 
-  function drawFromBazaar(tileId: string) {
-    send({ type: 'draw_from_bazaar', tileId });
+  function drawFromBazaar() {
+    send({ type: 'draw_from_bazaar' });
   }
 
   function passTurn() {
     send({ type: 'pass_turn' });
   }
 
-  const hasPlay = myHand.some(canPlayTile);
+  const opponents = players.filter(p => p.id !== myPlayerId);
 
   return (
-    <div className="flex flex-col min-h-screen relative overflow-hidden">
-      {/* Score bar */}
+    <div className="felt-table relative flex flex-col min-h-screen overflow-hidden">
+
+      {/* ── Score bar ─────────────────────────────── */}
       <ScoreBar scores={scores} settings={settings} players={players} />
 
-      {/* Other players */}
-      <div className="flex justify-between px-4 pt-2 pb-1">
-        {players.filter(p => p.id !== myPlayerId).map(p => (
-          <PlayerAvatar key={p.id} player={p} isActive={p.seat === currentTurn} />
+      {/* ── Opponents row ─────────────────────────── */}
+      <div className="flex justify-center gap-6 px-4 pt-3 pb-1 z-10">
+        {opponents.map(p => (
+          <PlayerAvatar key={p.id} player={p}
+            isActive={p.seat === currentTurn}
+            handCount={(p.hand as DominoTile[]).length}
+          />
         ))}
       </div>
 
-      {/* Chain */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-2 overflow-auto">
-        <div className="flex items-center gap-1 overflow-x-auto max-w-full py-4 px-2">
-          {chain.length === 0 && (
-            <p className="text-bg-3 text-lg">Ланцюг порожній — перший хід</p>
-          )}
-          {chain.map((ct, i) => (
-            <ChainTileView key={ct.tile.id + i} ct={ct} />
-          ))}
-        </div>
+      {/* ── Main table area ───────────────────────── */}
+      <div className="flex-1 flex items-center justify-center relative z-10 py-2">
 
-        {/* Bazaar */}
+        {/* Bazaar stack — right side */}
         {settings.bazaarEnabled && bazaar.length > 0 && (
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-bg-3 text-sm uppercase tracking-widest">Базар</p>
-            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
-              {bazaar.map(t => (
-                <motion.button key={t.id} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
-                  disabled={!(isMyTurn && !hasPlay)}
-                  onClick={() => drawFromBazaar(t.id)}
-                  className="disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <TileCard tile={t} />
-                </motion.button>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+            {/* Stacked face-down tiles (show up to 5 visual layers) */}
+            <div className="relative" style={{ width: TILE_HALF * 2 + 4, height: TILE_HALF + (Math.min(bazaar.length, 5) - 1) * 4 }}>
+              {Array.from({ length: Math.min(bazaar.length, 5) }).map((_, i) => (
+                <div key={i} className="absolute" style={{ bottom: i * 4, left: i * 0, zIndex: i }}>
+                  <DominoBack size={TILE_HALF} />
+                </div>
               ))}
             </div>
+            <span className="text-felt-border bg-ui-card border border-ui-border rounded-full px-2 py-0.5 text-xs font-semibold text-tile-bg">
+              {bazaar.length}
+            </span>
+            {isMyTurn && !hasPlay && (
+              <motion.button whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.05 }}
+                onClick={drawFromBazaar}
+                className="bg-teamA text-ui-bg rounded-xl px-3 py-1 text-sm font-bold shadow-tile mt-1">
+                Взяти
+              </motion.button>
+            )}
           </div>
         )}
+
+        {/* Chain */}
+        <div className="w-full max-w-[calc(100vw-120px)] overflow-x-auto">
+          <ChainView chain={chain} />
+        </div>
       </div>
 
-      {/* End placement buttons */}
+      {/* ── End selection (left / right) ──────────── */}
       <AnimatePresence>
-        {selectedTile && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="flex gap-4 justify-center pb-2"
-          >
-            <button onClick={() => playTile('left')}
-              className="bg-teamB text-white rounded-xl px-6 py-2 text-lg font-semibold">
+        {selectedTileId && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+            className="flex gap-3 justify-center pb-2 z-20">
+            <motion.button whileTap={{ scale: 0.93 }}
+              onClick={() => playTile('left')}
+              className="bg-teamB text-white rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
               ← Ліво
-            </button>
-            <button onClick={() => setSelectedTile(null)}
-              className="bg-bg-2 border border-bg-3 rounded-xl px-6 py-2 text-lg">
-              Скасувати
-            </button>
-            <button onClick={() => playTile('right')}
-              className="bg-teamA text-bg rounded-xl px-6 py-2 text-lg font-semibold">
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.93 }}
+              onClick={() => setSelectedTileId(null)}
+              className="bg-ui-card border border-ui-border rounded-xl px-5 py-2 text-lg">
+              ✕
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.93 }}
+              onClick={() => playTile('right')}
+              className="bg-teamA text-ui-bg rounded-xl px-5 py-2 text-lg font-semibold shadow-tile">
               Право →
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* My hand */}
-      <div className="flex flex-col items-center gap-2 pb-4 px-2">
-        <p className="text-bg-3 text-sm">
+      {/* ── My hand ───────────────────────────────── */}
+      <div className="flex flex-col items-center gap-2 pb-4 px-2 z-10">
+        <p className={`text-sm font-semibold px-3 py-0.5 rounded-full ${isMyTurn ? 'bg-teamA text-ui-bg' : 'bg-ui-card text-tile-bg'}`}>
           {isMyTurn ? '🟢 Ваш хід' : `Хід: ${currentPlayer?.name ?? '?'}`}
         </p>
-        <div className="flex gap-2 flex-wrap justify-center">
+
+        <div className="flex gap-2 flex-wrap justify-center px-2">
           {myHand.map(t => {
             const playable = isMyTurn && canPlayTile(t);
-            const sel = selectedTile === t.id;
+            const sel = selectedTileId === t.id;
+            const isDouble = t.left === t.right;
             return (
-              <motion.button key={t.id}
-                whileHover={playable ? { y: -6, scale: 1.06 } : {}}
-                whileTap={playable ? { scale: 0.95 } : {}}
-                onClick={() => playable && setSelectedTile(sel ? null : t.id)}
-                className={`transition-all ${sel ? 'ring-2 ring-teamA ring-offset-2 ring-offset-bg' : ''} ${!playable ? 'opacity-40 cursor-not-allowed' : ''}`}
-              >
-                <TileCard tile={t} />
-              </motion.button>
+              <DominoTileCard key={t.id}
+                left={t.left} right={t.right}
+                isDouble={isDouble}
+                size={TILE_HALF + 8}
+                selected={sel}
+                playable={playable}
+                onClick={() => {
+                  if (!playable) return;
+                  if (chain.length === 0) { send({ type: 'play_tile', tileId: t.id, end: 'right' }); return; }
+                  setSelectedTileId(sel ? null : t.id);
+                }}
+              />
             );
           })}
         </div>
 
         {isMyTurn && !hasPlay && bazaar.length === 0 && (
-          <motion.button whileTap={{ scale: 0.95 }} onClick={passTurn}
-            className="bg-danger text-white rounded-xl px-6 py-2 text-lg font-semibold mt-1">
+          <motion.button whileTap={{ scale: 0.93 }} onClick={passTurn}
+            className="bg-danger text-white rounded-xl px-5 py-2 text-lg font-semibold mt-1 shadow-tile">
             Пропустити хід
           </motion.button>
         )}
@@ -139,47 +160,67 @@ export default function GamePage() {
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Chain renderer ────────────────────────────────────────────────────────────
 
-function TileCard({ tile, rotate }: { tile: DominoTile; rotate?: boolean }) {
+function ChainView({ chain }: { chain: ChainTile[] }) {
+  if (!chain.length) {
+    return (
+      <div className="flex items-center justify-center h-20">
+        <span className="text-felt-light text-base opacity-60">Перший хід — викладіть кістку</span>
+      </div>
+    );
+  }
+
   return (
-    <div className={`bg-tile-bg border-2 border-tile-border rounded-xl shadow-tile flex ${rotate ? 'flex-row w-16 h-8' : 'flex-col w-10 h-20'} items-center justify-center gap-0 select-none`}>
-      <Pips n={tile.left} />
-      <div className={`${rotate ? 'w-px h-6' : 'h-px w-6'} bg-tile-border`} />
-      <Pips n={tile.right} />
+    <div className="flex flex-row items-center gap-0 px-4 py-3 min-h-[80px] flex-wrap">
+      {chain.map((ct, i) => {
+        const isDouble = ct.tile.left === ct.tile.right;
+        const a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
+        const b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
+
+        // Connect marker between tiles
+        return (
+          <div key={ct.tile.id + i} className="flex items-center">
+            {i > 0 && !isDouble && <div className="w-0" />}
+            <DominoTileCard
+              left={a} right={b}
+              isDouble={isDouble}
+              orientation="normal"
+              size={TILE_HALF}
+              animate
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function Pips({ n }: { n: number }) {
-  return (
-    <div className="flex-1 flex items-center justify-center">
-      <span className="text-tile-dot font-bold text-sm">{n}</span>
-    </div>
-  );
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function chainEndValue(chain: ChainTile[], end: 'left' | 'right'): number {
+  if (!chain.length) return -1;
+  if (end === 'left') {
+    const f = chain[0];
+    return f.orientation === 'normal' ? f.tile.left : f.tile.right;
+  }
+  const l = chain[chain.length - 1];
+  return l.orientation === 'normal' ? l.tile.right : l.tile.left;
 }
 
-function ChainTileView({ ct }: { ct: ChainTile }) {
-  return (
-    <motion.div
-      initial={{ scale: 0, rotate: -20, opacity: 0 }}
-      animate={{ scale: 1, rotate: ct.tile.left === ct.tile.right ? 90 : 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-    >
-      <TileCard tile={ct.tile} rotate={ct.tile.left === ct.tile.right} />
-    </motion.div>
-  );
-}
-
-function PlayerAvatar({ player, isActive }: { player: { name: string; team: 'A' | 'B' | null; connected: boolean; hand: unknown[] }; isActive: boolean }) {
-  const glowCls = player.team === 'A' ? 'text-teamA' : player.team === 'B' ? 'text-teamB' : 'text-white';
+function PlayerAvatar({ player, isActive, handCount }: {
+  player: { name: string; team: 'A' | 'B' | null; connected: boolean };
+  isActive: boolean;
+  handCount: number;
+}) {
+  const glowColor = player.team === 'A' ? 'text-teamA' : player.team === 'B' ? 'text-teamB' : 'text-white';
   return (
     <div className={`flex flex-col items-center gap-1 ${!player.connected ? 'opacity-40' : ''}`}>
-      <div className={`w-10 h-10 rounded-full bg-bg-2 flex items-center justify-center text-lg ${isActive ? `animate-pulse-glow border-2 border-current ${glowCls}` : 'border border-bg-3'}`}>
-        👤
-      </div>
-      <span className="text-xs text-center max-w-[60px] truncate">{player.name}</span>
-      <span className="text-xs text-bg-3">{(player.hand as unknown[]).length} к.</span>
+      <div className={`w-10 h-10 rounded-full bg-ui-card flex items-center justify-center text-lg border-2 ${
+        isActive ? `${glowColor} animate-pulse-glow border-current` : 'border-ui-border'
+      }`}>👤</div>
+      <span className="text-xs max-w-[64px] truncate text-center text-tile-bg">{player.name}</span>
+      <span className="text-xs text-felt-light">{handCount} к.</span>
     </div>
   );
 }
@@ -189,38 +230,39 @@ function ScoreBar({ scores, settings, players }: {
   settings: { mode: string; targetScore: number };
   players: { id: string; name: string; team: 'A' | 'B' | null }[];
 }) {
-  if (settings.mode === 'teams') {
-    return (
-      <div className="flex justify-between px-6 py-2 bg-bg-2">
-        <ScoreBadge label="🟡 Команда A" score={scores['A'] ?? 0} target={settings.targetScore} color="teamA" />
-        <ScoreBadge label="💜 Команда B" score={scores['B'] ?? 0} target={settings.targetScore} color="teamB" />
-      </div>
-    );
-  }
   return (
-    <div className="flex gap-4 px-4 py-2 bg-bg-2 overflow-x-auto">
-      {players.map(p => (
-        <ScoreBadge key={p.id} label={p.name} score={scores[p.id] ?? 0} target={settings.targetScore} color="teamA" />
-      ))}
+    <div className="flex justify-between items-center px-4 py-2 bg-ui-bg border-b border-ui-border z-10">
+      {settings.mode === 'teams' ? (
+        <>
+          <ScoreBadge label="🟡 A" score={scores['A'] ?? 0} target={settings.targetScore} color="teamA" />
+          <span className="text-ui-border text-sm">до {settings.targetScore}</span>
+          <ScoreBadge label="💜 B" score={scores['B'] ?? 0} target={settings.targetScore} color="teamB" />
+        </>
+      ) : (
+        <div className="flex gap-4 w-full overflow-x-auto">
+          {players.map(p => (
+            <ScoreBadge key={p.id} label={p.name} score={scores[p.id] ?? 0} target={settings.targetScore} color="teamA" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function ScoreBadge({ label, score, target, color }: { label: string; score: number; target: number; color: 'teamA' | 'teamB' }) {
+function ScoreBadge({ label, score, target, color }: {
+  label: string; score: number; target: number; color: 'teamA' | 'teamB';
+}) {
+  const pct = Math.min(100, (score / target) * 100);
   const cls = color === 'teamA' ? 'text-teamA' : 'text-teamB';
+  const barCls = color === 'teamA' ? 'bg-teamA' : 'bg-teamB';
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-xs text-bg-3">{label}</span>
-      <motion.span key={score} initial={{ scale: 1.4 }} animate={{ scale: 1 }}
-        className={`text-3xl font-bold ${cls}`}>{score}</motion.span>
-      <span className="text-xs text-bg-3">/ {target}</span>
+    <div className="flex flex-col items-center min-w-[56px]">
+      <span className="text-xs text-tile-bg opacity-70">{label}</span>
+      <motion.span key={score} initial={{ scale: 1.5 }} animate={{ scale: 1 }}
+        className={`text-2xl font-bold leading-none ${cls}`}>{score}</motion.span>
+      <div className="w-12 h-1 bg-ui-border rounded-full mt-0.5">
+        <div className={`h-full rounded-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
-}
-
-function chainLeft(chain: ChainTile[]): number {
-  const f = chain[0]; return f.orientation === 'normal' ? f.tile.left : f.tile.right;
-}
-function chainRight(chain: ChainTile[]): number {
-  const l = chain[chain.length - 1]; return l.orientation === 'normal' ? l.tile.right : l.tile.left;
 }

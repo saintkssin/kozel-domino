@@ -53,7 +53,7 @@ export type ClientToServer =
   | { type: 'start_game' }
   | { type: 'start_next_round' }
   | { type: 'play_tile'; tileId: string; end: 'left' | 'right' }
-  | { type: 'draw_from_bazaar'; tileId: string }
+  | { type: 'draw_from_bazaar' } // server picks random tile
   | { type: 'pass_turn' };
 
 export type ServerToClient =

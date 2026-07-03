@@ -3,19 +3,39 @@
 @tailwind utilities;
 
 body {
-  background-color: #0f0e17;
+  background-color: #0f1e14;
   color: #f0ede8;
   font-family: 'Fredoka', sans-serif;
   min-height: 100vh;
   margin: 0;
 }
 
+/* Felt table texture */
+.felt-table {
+  background-color: #1a4d2e;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0,0,0,0.03) 0px,
+      rgba(0,0,0,0.03) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0,0,0,0.03) 0px,
+      rgba(0,0,0,0.03) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.5);
+}
+
 /* Vignette overlay */
-body::after {
+.felt-table::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-  z-index: 9999;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%);
 }
