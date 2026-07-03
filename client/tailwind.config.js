@@ -1,19 +1,19 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       fontFamily: { fredoka: ['Fredoka', 'sans-serif'] },
       colors: {
-        bg:      { DEFAULT: '#0f0e17', 2: '#1a1828', 3: '#232136' },
-        teamA:   { DEFAULT: '#f5a623', light: '#ffd580', dark: '#b87200' },
-        teamB:   { DEFAULT: '#7c6af5', light: '#b8b0ff', dark: '#4a3fc7' },
-        danger:  '#e84040',
-        tile:    { bg: '#2a2740', border: '#4a4670', dot: '#f0ede8' },
+        bg:    { DEFAULT: '#0f0e17', 2: '#1a1828', 3: '#232136' },
+        teamA: { DEFAULT: '#f5a623', light: '#ffd580', dark: '#b87200' },
+        teamB: { DEFAULT: '#7c6af5', light: '#b8b0ff', dark: '#4a3fc7' },
+        danger: '#e84040',
+        tile:  { bg: '#2a2740', border: '#4a4670', dot: '#f0ede8' },
       },
       boxShadow: {
-        glow:  '0 0 16px 4px currentColor',
-        tile:  '0 4px 16px rgba(0,0,0,0.6)',
+        glow: '0 0 16px 4px currentColor',
+        tile: '0 4px 16px rgba(0,0,0,0.6)',
         'tile-hover': '0 8px 24px rgba(0,0,0,0.8)',
       },
       keyframes: {
@@ -22,7 +22,7 @@ export default {
           '60%':  { transform: 'scale(1.3)', opacity: '1' },
           '100%': { transform: 'scale(1)',   opacity: '0' },
         },
-        'shake': {
+        shake: {
           '0%,100%': { transform: 'translateX(0)' },
           '20%':     { transform: 'translateX(-6px)' },
           '40%':     { transform: 'translateX(6px)' },
@@ -35,9 +35,9 @@ export default {
         },
       },
       animation: {
-        'score-pop': 'score-pop 1.2s ease-out forwards',
-        'shake':     'shake 0.4s ease-in-out',
-        'pulse-glow':'pulse-glow 1.5s ease-in-out infinite',
+        'score-pop':  'score-pop 1.2s ease-out forwards',
+        shake:        'shake 0.4s ease-in-out',
+        'pulse-glow': 'pulse-glow 1.5s ease-in-out infinite',
       },
     },
   },
