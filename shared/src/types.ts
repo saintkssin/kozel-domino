@@ -76,5 +76,5 @@ export const DEFAULT_SETTINGS: RoomSettings = {
 export const DEAL_CONFIG: Record<number, { tilesPerPlayer: number; bazaarSize: number }> = {
   2: { tilesPerPlayer: 7, bazaarSize: 14 },
   3: { tilesPerPlayer: 7, bazaarSize: 7 },
-  4: { tilesPerPlayer: 6, bazaarSize: 4 },
+  4: { tilesPerPlayer: 7, bazaarSize: 0 },
 };

@@ -106,7 +106,7 @@ export function placeTile(
 
 function calcScoreDelta(state: GameState): number {
   const { chain } = state;
-  if (chain.length < 3) return 0; // need at least one tile in the middle before scoring
+  if (chain.length < 3) return 0;
   const sum = chainLeftValue(chain) + chainRightValue(chain);
   return sum % 5 === 0 ? sum : 0;
 }
@@ -147,7 +147,8 @@ export function checkRoundEnd(state: GameState): { ended: boolean; winnerKey?: s
     totals.sort((a, b) => a.pips - b.pips);
     const winner = totals[0].player;
     const loserPips = totals.slice(1).reduce((s, t) => s + t.pips, 0);
-    addScore(state, winner, loserPips);
+    const bonus = Math.floor(loserPips / 5) * 5;
+    if (bonus > 0) addScore(state, winner, bonus);
     return { ended: true, winnerKey: scoreKey(state, winner), reason: 'blocked' };
   }
 
