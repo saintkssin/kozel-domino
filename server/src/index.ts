@@ -240,10 +240,7 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         if (idx === -1) return err(socket, 'Кістка не в базарі');
         const [drawn] = state.bazaar.splice(idx, 1);
         p.hand.push(drawn);
-
-        // After drawing, if player can now play — their turn continues; otherwise advance
-        if (!hasAnyPlay(p.hand, state.chain)) nextTurn(state);
-
+        // Turn stays on this player — they keep drawing until playable or bazaar empty, then pass
         updateRoom(state);
         broadcast(state);
         break;

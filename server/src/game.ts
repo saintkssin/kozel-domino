@@ -106,7 +106,7 @@ export function placeTile(
 
 function calcScoreDelta(state: GameState): number {
   const { chain } = state;
-  if (chain.length < 2) return 0; // first tile — no open ends to sum
+  if (!chain.length) return 0;
   const sum = chainLeftValue(chain) + chainRightValue(chain);
   return sum % 5 === 0 ? sum : 0;
 }
@@ -132,8 +132,7 @@ export function checkRoundEnd(state: GameState): { ended: boolean; winnerKey?: s
     const opponentPips = state.players
       .filter(p => scoreKey(state, p) !== key)
       .reduce((sum, p) => sum + p.hand.reduce((s, t) => s + t.left + t.right, 0), 0);
-    const bonus = Math.floor(opponentPips / 5) * 5;
-    if (bonus > 0) addScore(state, fishPlayer, bonus);
+    if (opponentPips > 0) addScore(state, fishPlayer, opponentPips);
     return { ended: true, winnerKey: key, reason: 'риба' };
   }
 
