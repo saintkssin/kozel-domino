@@ -1,7 +1,7 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install --cache /tmp/npm-cache && npm run build -w client && npm run build -w server"
+    "buildCommand": "npm install --cache /tmp/npm-cache && npm run build -w shared && npm run build -w client && npm run build -w server"
   },
   "deploy": {
     "startCommand": "node server/dist/server/src/index.js"
