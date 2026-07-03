@@ -265,13 +265,21 @@ function SnakeTile({ ct, flipPips, isVert }: { ct: ChainTile; flipPips?: boolean
   let a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
   let b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
   if (flipPips) [a, b] = [b, a];
-  // Vertical segment: non-doubles → portrait; doubles → landscape (perpendicular, opposite to horizontal)
+  // Vertical segment: non-doubles → portrait; doubles → landscape (perpendicular)
   const layout = isVert && !isDouble ? 'vertical' : 'auto';
-  const effectiveDouble = isVert ? false : isDouble; // suppress auto-vertical for doubles in vert segment
-  return (
-    <DominoTileCard left={a} right={b} isDouble={effectiveDouble}
-      layout={layout} size={TILE_HALF} animate />
-  );
+  const effectiveDouble = isVert ? false : isDouble;
+  const tile = <DominoTileCard left={a} right={b} isDouble={effectiveDouble}
+    layout={layout} size={TILE_HALF} animate />;
+  // In horizontal segments wrap every tile in a fixed-height cell (TILE_HALF*2)
+  // so doubles (80px) and normal tiles (40px) share the same centerline
+  if (!isVert) {
+    return (
+      <div style={{ height: TILE_HALF * 2, display: 'flex', alignItems: 'center' }}>
+        {tile}
+      </div>
+    );
+  }
+  return tile;
 }
 
 function ChainView({ chain }: { chain: ChainTile[] }) {
@@ -307,8 +315,8 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
               </div>
             )}
 
-            {/* horizontal row — items-center so doubles are centred, not bottom-aligned */}
-            <div className={`flex ${isLtr ? 'flex-row' : 'flex-row-reverse'} items-center gap-0`}>
+            {/* horizontal row — all cells are TILE_HALF*2 tall, so doubles center naturally */}
+            <div className={`flex ${isLtr ? 'flex-row' : 'flex-row-reverse'} items-stretch gap-0`}>
               {h.tiles.map(ct => <SnakeTile key={ct.tile.id} ct={ct} flipPips={!isLtr} />)}
             </div>
 
