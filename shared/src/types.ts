@@ -51,6 +51,7 @@ export type ClientToServer =
   | { type: 'assign_seat'; playerId: string; seat: number }
   | { type: 'toggle_ready' }
   | { type: 'start_game' }
+  | { type: 'start_next_round' }
   | { type: 'play_tile'; tileId: string; end: 'left' | 'right' }
   | { type: 'draw_from_bazaar'; tileId: string }
   | { type: 'pass_turn' };

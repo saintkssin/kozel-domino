@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import {
-  ClientToServer, ServerToClient, GameState, Player, DEFAULT_SETTINGS,
+  ClientToServer, GameState, Player, DEFAULT_SETTINGS,
 } from '@kozel/shared';
 import {
   createRoom, getRoom, updateRoom, deleteRoom,
@@ -19,7 +19,8 @@ const httpServer = createServer(app);
 
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
-const io = new Server<ClientToServer, ServerToClient>(httpServer, {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const io = new Server<ClientToServer, any>(httpServer, {
   cors: { origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] },
 });
 
