@@ -57,7 +57,8 @@ export type ClientToServer =
   | { type: 'draw_from_bazaar'; tileId: string }
   | { type: 'pass_turn' }
   | { type: 'leave_room' }
-  | { type: 'restart_game' };
+  | { type: 'restart_game' }
+  | { type: 'reconnect'; token: string };
 
 export type ServerToClient =
   | { type: 'room_state'; state: GameState }

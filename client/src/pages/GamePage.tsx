@@ -92,7 +92,7 @@ export default function GamePage() {
           )}
         </div>
 
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
+        <div className="flex-1 flex items-center justify-center overflow-auto">
           <ChainView chain={chain} />
         </div>
 
@@ -249,21 +249,34 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
       </div>
     );
   }
+
+  const ROW = 10;
+  const rows: { tiles: ChainTile[]; rtl: boolean }[] = [];
+  for (let i = 0; i < chain.length; i += ROW) {
+    rows.push({ tiles: chain.slice(i, i + ROW), rtl: rows.length % 2 !== 0 });
+  }
+
   return (
-    <div className="flex flex-row items-center justify-center gap-0 px-2 py-3 min-h-[80px] flex-wrap">
-      {chain.map((ct, i) => {
-        const isDouble = ct.tile.left === ct.tile.right;
-        const a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
-        const b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
-        return (
-          <div key={ct.tile.id + i} className="flex items-center">
-            <DominoTileCard left={a} right={b} isDouble={isDouble} orientation="normal" size={TILE_HALF} animate />
-          </div>
-        );
-      })}
+    <div className="inline-flex flex-col gap-0 p-2">
+      {rows.map(({ tiles, rtl }, ri) => (
+        <div key={ri} className={`flex ${rtl ? 'flex-row-reverse' : 'flex-row'} items-center gap-0`}>
+          {tiles.map((ct) => {
+            const isDouble = ct.tile.left === ct.tile.right;
+            let a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
+            let b = ct.orientation === 'normal' ? ct.tile.right : ct.tile.left;
+            if (rtl) [a, b] = [b, a];
+            return (
+              <DominoTileCard key={ct.tile.id + ri}
+                left={a} right={b} isDouble={isDouble}
+                orientation="normal" size={TILE_HALF} animate />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
+
 
 function chainEndValue(chain: ChainTile[], end: 'left' | 'right'): number {
   if (!chain.length) return -1;

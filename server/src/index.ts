@@ -317,6 +317,22 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
         broadcast(state);
         break;
       }
+
+      case 'reconnect': {
+        const entry = consumeReconnectToken(msg.token);
+        if (!entry) return err(socket, 'Session expired');
+        const state = getRoom(entry.roomId);
+        if (!state) return err(socket, 'Room no longer exists');
+        const player = state.players.find(p => p.id === entry.playerId);
+        if (!player) return err(socket, 'Player not found');
+        socket.playerId = entry.playerId;
+        socket.roomId = entry.roomId;
+        player.connected = true;
+        socket.join(entry.roomId);
+        updateRoom(state);
+        broadcast(state);
+        break;
+      }
     }
   });
 
