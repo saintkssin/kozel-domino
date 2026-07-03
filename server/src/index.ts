@@ -30,9 +30,13 @@ app.use(express.json());
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve built client in production
-const clientDist = path.resolve(__dirname, '../../../client/dist');
+// __dirname = server/dist/server/src → ../../../.. = repo root
+const clientDist = path.resolve(__dirname, '..', '..', '..', '..', 'client', 'dist');
 app.use(express.static(clientDist));
-app.get('*', (_, res) => res.sendFile(path.join(clientDist, 'index.html')));
+app.get('*', (_req, res) => {
+  const idx = path.join(clientDist, 'index.html');
+  res.sendFile(idx, err => { if (err) res.status(404).send('Not found'); });
+});
 
 // ── Socket handler ───────────────────────────────────────────────────────────
 
@@ -297,4 +301,4 @@ io.on('connection', (socket: Socket & { playerId?: string; roomId?: string }) =>
 });
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
-httpServer.listen(PORT, () => console.log(`Kozel server listening on port ${PORT}`));
+httpServer.listen(PORT, '0.0.0.0', () => console.log(`Kozel server listening on port ${PORT}`));
