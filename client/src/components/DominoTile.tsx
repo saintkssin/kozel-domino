@@ -37,8 +37,13 @@ type TileProps = {
   left: number;
   right: number;
   isDouble?: boolean;
-  /** 'normal' = left half is shown first; 'flipped' = right half shown first */
+  /** 'normal' = left half first; 'flipped' = right half first */
   orientation?: 'normal' | 'flipped';
+  /**
+   * 'auto'     — doubles vertical, others horizontal (chain)
+   * 'vertical' — always vertical (hand)
+   */
+  layout?: 'auto' | 'vertical';
   size?: number;
   selected?: boolean;
   playable?: boolean;
@@ -48,13 +53,16 @@ type TileProps = {
 
 export function DominoTileCard({
   left, right, isDouble, orientation = 'normal',
+  layout = 'auto',
   size = 28, selected, playable = true, animate = false, onClick,
 }: TileProps) {
   const a = orientation === 'normal' ? left : right;
   const b = orientation === 'normal' ? right : left;
 
-  const tileEl = isDouble ? (
-    // Double: vertical layout (perpendicular to chain)
+  const useVertical = layout === 'vertical' || (layout === 'auto' && isDouble);
+
+  const tileEl = useVertical ? (
+    // Vertical layout: value on top, value on bottom
     <div
       style={{ width: size, borderRadius: size * 0.15 }}
       className={`flex flex-col bg-tile-bg border border-tile-border shadow-tile select-none ${
@@ -66,7 +74,7 @@ export function DominoTileCard({
       <DominoHalf n={b} size={size} />
     </div>
   ) : (
-    // Normal: horizontal layout
+    // Horizontal layout: value on left, value on right
     <div
       style={{ height: size, borderRadius: size * 0.15 }}
       className={`flex flex-row bg-tile-bg border border-tile-border shadow-tile select-none ${

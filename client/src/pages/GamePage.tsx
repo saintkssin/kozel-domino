@@ -71,7 +71,7 @@ export default function GamePage() {
             {bazaar.map(t => (
               <DominoTileCard key={t.id}
                 left={t.left} right={t.right}
-                isDouble={t.left === t.right}
+                layout="vertical"
                 size={TILE_HALF - 6}
                 playable={isMyTurn && !hasPlay}
                 onClick={isMyTurn && !hasPlay ? () => drawFromBazaar(t.id) : undefined}
@@ -80,8 +80,8 @@ export default function GamePage() {
           </div>
         )}
 
-        {/* Chain */}
-        <div className="w-full max-w-[calc(100vw-120px)] overflow-x-auto">
+        {/* Chain — centered */}
+        <div className="flex-1 flex items-center justify-center overflow-x-auto">
           <ChainView chain={chain} />
         </div>
       </div>
@@ -120,11 +120,10 @@ export default function GamePage() {
           {myHand.map(t => {
             const playable = isMyTurn && canPlayTile(t);
             const sel = selectedTileId === t.id;
-            const isDouble = t.left === t.right;
             return (
               <DominoTileCard key={t.id}
                 left={t.left} right={t.right}
-                isDouble={isDouble}
+                layout="vertical"
                 size={TILE_HALF + 8}
                 selected={sel}
                 playable={playable}
@@ -164,7 +163,7 @@ function ChainView({ chain }: { chain: ChainTile[] }) {
   }
 
   return (
-    <div className="flex flex-row items-center gap-0 px-4 py-3 min-h-[80px] flex-wrap">
+    <div className="flex flex-row items-center justify-center gap-0 px-4 py-3 min-h-[80px] flex-wrap">
       {chain.map((ct, i) => {
         const isDouble = ct.tile.left === ct.tile.right;
         const a = ct.orientation === 'normal' ? ct.tile.left : ct.tile.right;
